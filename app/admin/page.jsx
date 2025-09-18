@@ -1,24 +1,75 @@
 "use client";
-import { useEffect, useState, useRef, useCallback } from "react";
-import TeamManager from "../components/TeamManager";
-import { useRouter } from "next/navigation";
 
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import TeamManager from "../components/TeamManager";
+
+// ---------- helpers ----------
 async function parseJsonSafe(res) {
   const text = await res.text();
-  try { return JSON.parse(text); } catch (e) { console.error("Non-JSON response:", text); return null; }
+  try { return JSON.parse(text); } catch { console.error("Non-JSON response:", text); return null; }
 }
 
-function Badge({ children }) {
-  return <span className="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-gray-100 border">{children}</span>;
+const STATUS_LABEL = {
+  NOT_STARTED: "Not started",
+  IN_PROGRESS: "In progress",
+  ON_HOLD: "On hold",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+function classNames(...c) { return c.filter(Boolean).join(" "); }
+
+function statusStyles(status) {
+  switch (status) {
+    case "NOT_STARTED":
+      return "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200";
+    case "IN_PROGRESS":
+      return "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200";
+    case "ON_HOLD":
+      return "bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-200";
+    case "COMPLETED":
+      return "bg-green-50 text-green-700 ring-1 ring-inset ring-green-200";
+    case "CANCELLED":
+      return "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200";
+    default:
+      return "bg-gray-100 text-gray-700 ring-1 ring-inset ring-gray-200";
+  }
 }
 
+function typeStyles(type) {
+  if (type === "EXTERNAL") return "bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200";
+  return "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200"; // INTERNAL
+}
+
+function Chip({ children, className }) {
+  return (
+    <span className={classNames(
+      "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
+      className
+    )}>
+      {children}
+    </span>
+  );
+}
+
+function KeyValue({ label, value }) {
+  return (
+    <div className="text-xs">
+      <div className="text-gray-500">{label}</div>
+      <div className="font-medium text-gray-900">{value ?? "—"}</div>
+    </div>
+  );
+}
+
+// ---------- page ----------
 export default function DashboardPage() {
-  const router = useRouter(); // <-- add this
+  const router = useRouter();
+
   // left side
   const [members, setMembers] = useState([]);
   const [skills, setSkills] = useState([]);
   const [teams, setTeams] = useState([]);
-  const [newClientName, setNewClientName] = useState("");
 
   // tickets
   const [tickets, setTickets] = useState([]);
@@ -31,11 +82,12 @@ export default function DashboardPage() {
   const [ticketSearch, setTicketSearch] = useState("");
   const [organizations, setOrganizations] = useState([]);
   const [orgFilter, setOrgFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all"); // INTERNAL | EXTERNAL | all
+  const [typeFilter, setTypeFilter] = useState("all");
 
   // modals
   const [activeTicket, setActiveTicket] = useState(null);
   const [showNewModal, setShowNewModal] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newType, setNewType] = useState("INTERNAL");
   const [newOrgId, setNewOrgId] = useState("");
@@ -142,7 +194,7 @@ export default function DashboardPage() {
         client_name: newClientName.trim(),
         description: newDesc.trim(),
         organization_id: newOrgId ? Number(newOrgId) : undefined,
-        ticket_type: newType, // ignored by internal route, but ok to send
+        ticket_type: newType,
       };
 
       const res = await fetch("/api/tickets/internal/create", {
@@ -157,7 +209,6 @@ export default function DashboardPage() {
         return;
       }
 
-      // Success – show the generated ticket id
       alert(`Your ticket has been created.\nTicket ID: ${data?.ticket?.ticket_id || "—"}`);
 
       setShowNewModal(false);
@@ -173,109 +224,167 @@ export default function DashboardPage() {
     }
   }
 
+  // pretty counts
+  const headerCount = useMemo(() => new Intl.NumberFormat().format(total), [total]);
 
   return (
-    <div className="min-h-screen p-4 bg-gray-50">
-      <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 h-[88vh] min-h-0">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 p-4 h-[88vh] min-h-0">
         {/* Left: Teams/Skills */}
-        <div className="lg:col-span-1 h-full min-h-0">
-          <TeamManager teams={teams} members={members} skills={skills} />
-        </div>
+        <section className="lg:col-span-1 h-full min-h-0">
+          <div className="h-full min-h-0">
+            <TeamManager teams={teams} members={members} skills={skills} />
+          </div>
+        </section>
 
         {/* Right: Tickets */}
-        <div className="lg:col-span-2 h-full min-h-0 flex flex-col">
-          <div className="bg-white rounded-xl shadow-md p-4 flex flex-col h-full">
-            {/* Header controls */}
+        <section className="lg:col-span-2 h-full min-h-0 flex flex-col">
+          <div className="bg-white/90 backdrop-blur rounded-2xl shadow-sm border p-4 flex flex-col h-full">
+            {/* header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
-              <h2 className="text-lg font-bold">Tickets <span className="text-gray-500 text-sm">({total})</span></h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-semibold tracking-tight">Tickets</h2>
+                <span className="text-sm text-gray-500">({headerCount})</span>
+              </div>
+
               <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                 <input
                   type="text"
                   placeholder="Search tickets or org..."
                   value={ticketSearch}
                   onChange={(e) => setTicketSearch(e.target.value)}
-                  className="p-2 border rounded text-sm w-full sm:w-64"
+                  className="p-2 border rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-200"
                 />
-                <select value={orgFilter} onChange={(e) => setOrgFilter(e.target.value)} className="p-2 border rounded text-sm">
+                <select
+                  value={orgFilter}
+                  onChange={(e) => setOrgFilter(e.target.value)}
+                  className="p-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
                   <option value="all">All organizations</option>
                   {organizations.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
                 </select>
-                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="p-2 border rounded text-sm">
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="p-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
                   <option value="all">All types</option>
                   <option value="INTERNAL">Internal</option>
                   <option value="EXTERNAL">External</option>
                 </select>
-               
+
                 <button
                   onClick={() => router.push("/admin/mytickets")}
-                  className="border px-3 py-2 rounded text-sm"
+                  className="border px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition"
                 >
                   My tickets
                 </button>
 
-                <button onClick={() => setShowNewModal(true)} className="bg-blue-600 text-white px-3 py-2 rounded text-sm ml-auto">+ Ticket</button>
+                <button
+                  onClick={() => setShowNewModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm ml-auto transition"
+                >
+                  + Ticket
+                </button>
               </div>
             </div>
 
-            {/* Tickets list */}
+            {/* list */}
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 md:pr-2">
               {tickets.map((t) => (
-                <div key={t.id} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors flex flex-col gap-3 md:grid md:grid-cols-6 md:gap-4">
-                  {/* ID + Created */}
-                  <div>
-                    <div className="font-mono text-[13px]">{t.ticket_id}</div>
-                    <div className="text-xs text-gray-500">
-                      {t.created_at ? new Date(t.created_at).toLocaleString() : ""}
+                <article
+                  key={t.id}
+                  className="group border rounded-xl p-3 md:p-4 bg-white hover:bg-slate-50 transition shadow-[0_1px_0_rgba(0,0,0,0.03)]"
+                >
+                  <div className="grid gap-3 md:grid-cols-12 md:gap-4 items-start">
+                    {/* ID + created */}
+                    <div className="md:col-span-2">
+                      <div className="flex items-center justify-between md:block">
+                        <span className="font-mono text-xs md:text-[13px] text-gray-700">
+                          {t.ticket_id}
+                        </span>
+                        <span className="ml-2 md:ml-0 block text-[11px] text-gray-500">
+                          {t.created_at ? new Date(t.created_at).toLocaleString() : ""}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Middle: chips + content */}
+                    <div className="md:col-span-6">
+                      <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                        {t.organization?.name && (
+                          <Chip className="bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200">
+                            {t.organization.name}
+                          </Chip>
+                        )}
+                        <Chip className={typeStyles(t.ticket_type)}>{t.ticket_type}</Chip>
+                        <Chip className={statusStyles(t.status)}>
+                          {STATUS_LABEL[t.status] ?? t.status}
+                        </Chip>
+                      </div>
+
+                      <div className="font-semibold text-gray-900 truncate">
+                        {t.client_name}
+                      </div>
+                      <div className="mt-1 text-sm text-gray-700 break-words">
+                        {t.description}
+                      </div>
+                    </div>
+
+                    {/* timing */}
+                    <div className="md:col-span-2 space-y-2">
+                      <KeyValue
+                        label="Start"
+                        value={t.started_at ? new Date(t.started_at).toLocaleString() : "—"}
+                      />
+                      <KeyValue
+                        label="End"
+                        value={t.completed_at ? new Date(t.completed_at).toLocaleString() : "—"}
+                      />
+                    </div>
+
+                    {/* team / assignee */}
+                    <div className="md:col-span-1 space-y-2">
+                      <KeyValue label="Team" value={t.team?.name || "—"} />
+                      <KeyValue label="Assigned" value={t.assignee?.name || "—"} />
+                    </div>
+
+                    {/* action */}
+                    <div className="md:col-span-1">
+                      <div className="flex md:justify-end">
+                        <button
+                          onClick={() => setActiveTicket(t)}
+                          className="text-sm px-3 py-1.5 rounded-lg border bg-white hover:bg-blue-50 text-blue-700 border-blue-200 transition w-full md:w-auto"
+                        >
+                          {t.assignee?.name ? "Reassign" : "Assign"}
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Org + Description */}
-                  <div className="md:col-span-2">
-                    <div className="flex items-center gap-2 mb-1">
-                      {t.organization && <Badge>{t.organization.name}</Badge>}
-                      <Badge>{t.ticket_type}</Badge>
-                      <Badge>Status: {t.status}</Badge>
-                    </div>
-                    <div className="font-semibold truncate">{t.client_name}</div>
-                    <div className="text-sm text-gray-700 break-words">{t.description}</div>
-                  </div>
-
-                  {/* Start / End */}
-                  <div className="text-sm">
-                    <div>Start: {t.started_at ? new Date(t.started_at).toLocaleString() : "—"}</div>
-                    <div>End: {t.completed_at ? new Date(t.completed_at).toLocaleString() : "—"}</div>
-                  </div>
-
-                  {/* Team */}
-                  <div className="text-sm">Team: {t.team?.name || "—"}</div>
-
-                  {/* Assigned */}
-                  <div className="text-sm">Assigned: {t.assignee?.name || "—"}</div>
-
-                  {/* Actions */}
-                  <div className="text-right">
-                    <button onClick={() => setActiveTicket(t)} className="text-sm px-3 py-1 border rounded hover:bg-blue-50 w-full md:w-auto">
-                      {t.assignee?.name ? "Reassign" : "Assign"}
-                    </button>
-                  </div>
-                </div>
+                </article>
               ))}
+
               <div ref={bottomRef} className="h-6" />
-              {!tickets.length && <p className="text-gray-500 mt-4 text-center">No tickets found</p>}
+              {!tickets.length && (
+                <p className="text-gray-500 mt-6 text-center text-sm">No tickets found</p>
+              )}
             </div>
           </div>
-        </div>
+        </section>
       </div>
 
       {/* Assign modal */}
       {activeTicket && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg">
-            <h3 className="font-bold mb-2">Assign {activeTicket.ticket_id}</h3>
-            <p className="text-sm text-gray-600 mb-3">{activeTicket.description}</p>
-            <div className="space-y-2 max-h-72 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-2">
+          <div className="bg-white rounded-2xl border shadow-xl w-full max-w-lg">
+            <div className="px-5 py-4 border-b">
+              <h3 className="font-semibold">Assign {activeTicket.ticket_id}</h3>
+              <p className="text-sm text-gray-600 mt-1">{activeTicket.description}</p>
+            </div>
+
+            <div className="px-5 py-4 space-y-2 max-h-80 overflow-y-auto">
               {members.map(m => (
-                <div key={m.id} className="flex items-center justify-between border-b py-2">
+                <div key={m.id} className="flex items-center justify-between border rounded-lg p-2">
                   <div>
                     <div className="font-medium">{m.name}</div>
                     <div className="text-xs text-gray-500">{m.email}</div>
@@ -283,12 +392,23 @@ export default function DashboardPage() {
                       {m.role} • {Array.isArray(m.teams) && m.teams.length ? m.teams.map(t => t.name).join(", ") : "—"}
                     </div>
                   </div>
-                  <button onClick={() => assignToMember(m.id)} className="bg-blue-600 text-white px-3 py-1 rounded">Assign</button>
+                  <button
+                    onClick={() => assignToMember(m.id)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm transition"
+                  >
+                    Assign
+                  </button>
                 </div>
               ))}
             </div>
-            <div className="mt-4 flex justify-end">
-              <button onClick={() => setActiveTicket(null)} className="px-3 py-1 border rounded">Close</button>
+
+            <div className="px-5 py-3 border-t flex justify-end">
+              <button
+                onClick={() => setActiveTicket(null)}
+                className="px-3 py-1.5 border rounded-lg hover:bg-gray-50 text-sm"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
@@ -297,13 +417,16 @@ export default function DashboardPage() {
       {/* +Ticket modal */}
       {showNewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-2">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg">
-            <h3 className="font-bold mb-4">Create Ticket</h3>
-            <div className="space-y-3">
+          <div className="bg-white rounded-2xl border shadow-xl w-full max-w-lg">
+            <div className="px-5 py-4 border-b">
+              <h3 className="font-semibold">Create Ticket</h3>
+            </div>
+
+            <div className="px-5 py-4 space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Your name</label>
                 <input
-                  className="w-full border rounded p-2"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
                   placeholder="Who is creating this ticket?"
                   value={newClientName}
                   onChange={(e) => setNewClientName(e.target.value)}
@@ -313,7 +436,7 @@ export default function DashboardPage() {
               <div>
                 <label className="block text-sm font-medium mb-1">Type</label>
                 <select
-                  className="w-full border rounded p-2"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
                   value={newType}
                   onChange={(e) => setNewType(e.target.value)}
                 >
@@ -326,7 +449,7 @@ export default function DashboardPage() {
               <div>
                 <label className="block text-sm font-medium mb-1">Organization (optional)</label>
                 <select
-                  className="w-full border rounded p-2"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
                   value={newOrgId}
                   onChange={(e) => setNewOrgId(e.target.value)}
                 >
@@ -340,7 +463,7 @@ export default function DashboardPage() {
               <div>
                 <label className="block text-sm font-medium mb-1">Description</label>
                 <textarea
-                  className="w-full border rounded p-2 min-h-[120px]"
+                  className="w-full border rounded-lg px-3 py-2 text-sm min-h-[120px] focus:outline-none focus:ring-2 focus:ring-blue-200"
                   placeholder="Describe the ticket..."
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
@@ -348,12 +471,12 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="mt-5 flex justify-end gap-2">
-              <button onClick={() => setShowNewModal(false)} className="px-3 py-1 border rounded">Cancel</button>
+            <div className="px-5 py-4 border-t flex justify-end gap-2">
+              <button onClick={() => setShowNewModal(false)} className="px-3 py-1.5 border rounded-lg hover:bg-gray-50 text-sm">Cancel</button>
               <button
                 onClick={createTicket}
                 disabled={creating}
-                className="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50"
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm disabled:opacity-50 transition"
               >
                 {creating ? "Creating..." : "Create"}
               </button>
@@ -361,7 +484,6 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
