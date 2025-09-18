@@ -34,22 +34,23 @@ model Team {
 }
 
 model Member {
-  id              Int               @id @default(autoincrement())
-  name            String
-  email           String            @unique
-  role            String?
-  is_leader       Boolean           @default(false)
-  team_id         Int?
-  created_at      DateTime          @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime          @default(now()) @db.Timestamptz(6)
-  username        String?           @unique @db.VarChar(255)
-  password        String            @db.VarChar(255)
-  contact         String?           @db.VarChar(50)
-  skillset        String?           @db.VarChar(255)
-  team            Team?             @relation("PrimaryTeam", fields: [team_id], references: [id])
-  skillLinks      MembersOnSkills[]
-  teamLinks       MembersOnTeams[]
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String?  @unique // ← make optional
+  username   String?  @unique
+  password   String
+  role       String?
+  is_leader  Boolean  @default(false)
+  team_id    Int?
+  team       Team?    @relation(fields: [team_id], references: [id], name: "PrimaryTeam")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  contact    String?  @db.VarChar(50)
+  skillset   String?  @db.VarChar(255)
+
   assignedTickets Ticket[]          @relation("TicketAssigned")
+  teamLinks       MembersOnTeams[]
+  skillLinks      MembersOnSkills[]
 
   @@map("members")
 }

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import TeamManager from "../components/TeamManager";
+import { useRouter } from "next/navigation";
 
 async function parseJsonSafe(res) {
   const text = await res.text();
@@ -12,6 +13,7 @@ function Badge({ children }) {
 }
 
 export default function DashboardPage() {
+  const router = useRouter(); // <-- add this
   // left side
   const [members, setMembers] = useState([]);
   const [skills, setSkills] = useState([]);
@@ -203,6 +205,14 @@ export default function DashboardPage() {
                   <option value="INTERNAL">Internal</option>
                   <option value="EXTERNAL">External</option>
                 </select>
+               
+                <button
+                  onClick={() => router.push("/admin/mytickets")}
+                  className="border px-3 py-2 rounded text-sm"
+                >
+                  My tickets
+                </button>
+
                 <button onClick={() => setShowNewModal(true)} className="bg-blue-600 text-white px-3 py-2 rounded text-sm ml-auto">+ Ticket</button>
               </div>
             </div>

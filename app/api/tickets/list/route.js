@@ -1,45 +1,47 @@
-import prisma from '../../../lib/prisma';
-
-const toInt = (v, d) => {
-  const n = Number(v);
-  return Number.isFinite(n) && n > 0 ? n : d;
-};
+import prisma from "../../../lib/prisma";
 
 export async function GET(req) {
   try {
     const url = new URL(req.url);
-    const page = toInt(url.searchParams.get('page'), 1);
-    const pageSize = Math.min(toInt(url.searchParams.get('pageSize'), 20), 100);
-    const q = (url.searchParams.get('q') || '').trim();
-    const orgId = url.searchParams.get('orgId');
-    const type = url.searchParams.get('type'); // INTERNAL | EXTERNAL
+    const page = Number(url.searchParams.get("page") || 1);
+    const pageSize = Number(url.searchParams.get("pageSize") || 20);
+    const q = url.searchParams.get("q")?.trim();
+    const orgId = url.searchParams.get("orgId");
+    const type = url.searchParams.get("type"); // INTERNAL | EXTERNAL
+    const assigneeId = url.searchParams.get("assigneeId"); // <— NEW
 
     const where = {};
     if (q) {
       where.OR = [
-        { ticket_id: { contains: q, mode: 'insensitive' } },
-        { client_name: { contains: q, mode: 'insensitive' } },
-        { description: { contains: q, mode: 'insensitive' } },
-        { organization: { name: { contains: q, mode: 'insensitive' } } },
+        { ticket_id: { contains: q, mode: "insensitive" } },
+        { client_name: { contains: q, mode: "insensitive" } },
+        { description: { contains: q, mode: "insensitive" } },
+        { organization: { name: { contains: q, mode: "insensitive" } } },
       ];
     }
-    if (orgId && orgId !== 'all') where.organization_id = Number(orgId);
-    if (type && (type === 'INTERNAL' || type === 'EXTERNAL')) where.ticket_type = type;
+    if (orgId && orgId !== "all") where.organization_id = Number(orgId);
+    if (type && type !== "all") where.ticket_type = type;
+    if (assigneeId) where.assigned_to_id = Number(assigneeId); // <— NEW
 
-    const [total, tickets] = await Promise.all([
-      prisma.ticket.count({ where }),
+    const [tickets, total] = await Promise.all([
       prisma.ticket.findMany({
         where,
-        orderBy: { created_at: 'desc' },
+        orderBy: { created_at: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        include: { organization: true, team: true, assignee: true },
+        include: {
+          organization: true,
+          team: true,
+          assignee: true,
+          histories: false, // set true if you want history
+        },
       }),
+      prisma.ticket.count({ where }),
     ]);
 
-    return new Response(JSON.stringify({ total, tickets }), { status: 200 });
+    return new Response(JSON.stringify({ tickets, total }), { status: 200 });
   } catch (e) {
-    console.error(e);
-    return new Response(JSON.stringify({ error: 'Failed to fetch tickets' }), { status: 500 });
+    console.error("tickets/list", e);
+    return new Response(JSON.stringify({ error: "Failed to list tickets" }), { status: 500 });
   }
 }
