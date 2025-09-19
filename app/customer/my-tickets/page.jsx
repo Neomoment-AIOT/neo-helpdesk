@@ -21,6 +21,14 @@ const ACCENTS = {
   CANCELLED: "bg-slate-400",
 };
 
+// 🔹 NEW: format seconds -> "1h 12m"
+function formatDuration(totalSeconds = 0) {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return `${h ? `${h}h ` : ""}${m}m`.trim() || "0m";
+}
+
 function Badge({ children }) {
   return (
     <span className="inline-flex items-center px-2 py-0.5 text-[10px] rounded-full bg-gray-100 border">
@@ -29,22 +37,30 @@ function Badge({ children }) {
   );
 }
 
-function Card({ ticket, onClick }) {
+// 🔹 CHANGED: accept a "seconds" prop and render a time chip
+function Card({ ticket, onClick, seconds }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-lg border bg-white/95 hover:bg-white shadow-sm hover:shadow-md transition
-                 active:scale-[0.99] px-3 py-3"
+      className="w-full text-left rounded-lg border bg-white/95 hover:bg-white shadow-sm hover:shadow-md transition active:scale-[0.99] px-3 py-3"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="text-[11px] font-mono text-gray-500">{ticket.ticket_id}</span>
-        {/* org badge if present */}
-        {ticket.organization?.name && (
+
+        {/* Time spent chip */}
+        <span className="inline-flex items-center rounded-full border bg-violet-50 text-violet-700 ring-1 ring-violet-200 px-2 py-0.5 text-[10px]">
+          ⏱ {formatDuration(seconds || 0)}
+        </span>
+      </div>
+
+      {/* org badge if present */}
+      {ticket.organization?.name && (
+        <div className="mt-1">
           <span className="inline-flex items-center rounded-full border bg-sky-50 text-sky-700 ring-1 ring-sky-200 px-2 py-0.5 text-[10px]">
             {ticket.organization.name}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="mt-2 text-sm font-medium leading-5 text-gray-900 line-clamp-2">
         {ticket.client_name}
@@ -72,8 +88,7 @@ function ColumnHeader({ status, title, count }) {
           <div className={`h-2 w-2 rounded-full ${ACCENTS[status]}`} />
           <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
         </div>
-        <span className="inline-flex items-center justify-center min-w-[26px] h-6 px-2 rounded-full text-[11px] font-semibold
-                          bg-gray-100 text-gray-700 border">
+        <span className="inline-flex items-center justify-center min-w-[26px] h-6 px-2 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-700 border">
           {count}
         </span>
       </div>
@@ -81,27 +96,27 @@ function ColumnHeader({ status, title, count }) {
   );
 }
 
-function Column({ status, title, tickets, onCardClick }) {
+// 🔹 CHANGED: pass timeSpentMap down so each Card shows its seconds
+function Column({ status, title, tickets, onCardClick, timeSpentMap }) {
   return (
     <div className="flex flex-col w-[300px] md:w-[320px] min-w-[280px] max-w-[360px] h-full rounded-xl border bg-gradient-to-b from-gray-50 to-white">
       <ColumnHeader status={status} title={title} count={tickets.length} />
       <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 space-y-2">
         <div className="space-y-2 p-0.5">
           {tickets.map((t) => (
-            <Card key={t.id} ticket={t} onClick={() => onCardClick(t)} />
+            <Card key={t.id} ticket={t} onClick={() => onCardClick(t)} seconds={timeSpentMap[t.id]} />
           ))}
           {!tickets.length && (
             <div className="text-xs text-gray-400 text-center py-6 select-none">No tickets</div>
           )}
         </div>
       </div>
-      {/* Trello-like footer (placeholder) */}
-      
     </div>
   );
 }
 
-function TicketModal({ ticket, onClose }) {
+// 🔹 CHANGED: accept "seconds" so modal shows the same time chip
+function TicketModal({ ticket, onClose, seconds }) {
   if (!ticket) return null;
   return (
     <div
@@ -114,9 +129,15 @@ function TicketModal({ ticket, onClose }) {
       <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl border">
         {/* header */}
         <div className="sticky top-0 bg-white/90 backdrop-blur border-b px-5 py-3 flex items-center justify-between rounded-t-2xl">
-          <div className="flex flex-col">
-            <span className="text-xs text-gray-500">Ticket</span>
-            <span className="font-semibold">{ticket.ticket_id}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col">
+              <span className="text-xs text-gray-500">Ticket</span>
+              <span className="font-semibold">{ticket.ticket_id}</span>
+            </div>
+            {/* Time spent chip */}
+            <span className="inline-flex items-center rounded-full border bg-violet-50 text-violet-700 ring-1 ring-violet-200 px-2 py-0.5 text-[11px]">
+              ⏱ {formatDuration(seconds || 0)}
+            </span>
           </div>
           <button
             onClick={onClose}
@@ -196,6 +217,9 @@ export default function MyTicketsPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
 
+  // 🔹 NEW: ticketId -> total_seconds
+  const [timeSpent, setTimeSpent] = useState({});
+
   useEffect(() => {
     const s = getCustomerSession();
     if (!s) { router.replace("/login"); return; }
@@ -207,7 +231,6 @@ export default function MyTicketsPage() {
       if (!session) return;
       setLoading(true);
       try {
-        // already filtered on the server via `type=EXTERNAL`
         const res = await fetch(`/api/tickets/list?orgId=${session.orgId}&type=EXTERNAL&page=1&pageSize=1000`);
         const data = await res.json();
         if (res.ok) setAllTickets(data.tickets || []);
@@ -217,6 +240,23 @@ export default function MyTicketsPage() {
     }
     load();
   }, [session]);
+
+  // 🔹 NEW: fetch time summary after tickets are known — uses your existing endpoint path
+  useEffect(() => {
+    async function loadSummary() {
+      if (!allTickets.length) { setTimeSpent({}); return; }
+      const ids = allTickets.map(t => t.id).join(",");
+      const res = await fetch(`/api/tickets/time/summary?ids=${ids}`);
+      const data = await res.json().catch(() => ({}));
+      // Expect: { summary: [{ ticketId, total_seconds }] }
+      const map = {};
+      for (const row of (data && data.summary) || []) {
+        map[row.ticketId] = row.total_seconds || 0;
+      }
+      setTimeSpent(map);
+    }
+    loadSummary();
+  }, [allTickets]);
 
   const grouped = useMemo(() => {
     const onlyExternal = allTickets.filter(t => t.ticket_type === "EXTERNAL");
@@ -256,7 +296,7 @@ export default function MyTicketsPage() {
         </div>
       </div>
 
-      {/* Board: fixed height; columns scroll inside; horizontal scroll for overflow */}
+      {/* Board */}
       <div className="max-w-6xl mx-auto px-4 py-5 h-[calc(100vh-120px)] flex flex-col">
         <h1 className="text-lg font-semibold mb-3">My tickets</h1>
 
@@ -271,13 +311,19 @@ export default function MyTicketsPage() {
                 title={STATUS_LABEL[s]}
                 tickets={grouped[s]}
                 onCardClick={setSelected}
+                timeSpentMap={timeSpent}   // 🔹 pass seconds map down
               />
             ))}
           </div>
         )}
       </div>
 
-      <TicketModal ticket={selected} onClose={() => setSelected(null)} />
+      {/* Modal mirrors the same time */}
+      <TicketModal
+        ticket={selected}
+        onClose={() => setSelected(null)}
+        seconds={selected ? timeSpent[selected.id] : 0} // 🔹 show time in modal
+      />
     </div>
   );
 }

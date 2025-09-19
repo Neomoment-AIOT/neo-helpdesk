@@ -44,7 +44,7 @@ export async function POST(req) {
     }
 
     // Next status & timestamps
-    const newStatus = ticket.status === "NOT_STARTED" ? "IN_PROGRESS" : ticket.status;
+    const newStatus = ticket.status;
 
     // 3) Update ticket (relations are 'assignee' and 'team' in your Prisma schema)
     const updatedTicket = await prisma.ticket.update({

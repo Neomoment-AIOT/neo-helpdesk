@@ -24,7 +24,7 @@ export default function TeamManager({ teams: initialTeams = [], members: initial
 
   const API = {
     teamsList: "/api/teams/list",
-    teamsAdd: "/api/teams/add",
+    teamsAdd: "/api/teams/create",
     teamsUpdate: "/api/teams/update",
     teamsDelete: "/api/teams/delete",
     teamsAddMember: "/api/teams/add-member",

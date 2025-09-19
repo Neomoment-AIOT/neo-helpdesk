@@ -13,7 +13,7 @@ model Organization {
   slug              String?  @unique
   created_at        DateTime @default(now()) @db.Timestamptz(6)
   updated_at        DateTime @default(now()) @db.Timestamptz(6)
-  customer_password String // ⬅️ add this
+  customer_password String?
   tickets           Ticket[]
 
   @@map("organizations")
@@ -34,23 +34,23 @@ model Team {
 }
 
 model Member {
-  id         Int      @id @default(autoincrement())
-  name       String
-  email      String?  @unique // ← make optional
-  username   String?  @unique
-  password   String
-  role       String?
-  is_leader  Boolean  @default(false)
-  team_id    Int?
-  team       Team?    @relation(fields: [team_id], references: [id], name: "PrimaryTeam")
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @db.Timestamptz(6)
-  contact    String?  @db.VarChar(50)
-  skillset   String?  @db.VarChar(255)
-
-  assignedTickets Ticket[]          @relation("TicketAssigned")
-  teamLinks       MembersOnTeams[]
+  id              Int               @id @default(autoincrement())
+  name            String
+  email           String            @unique
+  role            String?
+  is_leader       Boolean           @default(false)
+  team_id         Int?
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime          @default(now()) @db.Timestamptz(6)
+  username        String?           @unique @db.VarChar(255)
+  password        String            @db.VarChar(255)
+  contact         String?           @db.VarChar(50)
+  skillset        String?           @db.VarChar(255)
+  team            Team?             @relation("PrimaryTeam", fields: [team_id], references: [id])
   skillLinks      MembersOnSkills[]
+  teamLinks       MembersOnTeams[]
+  TicketTimeLog   TicketTimeLog[]
+  assignedTickets Ticket[]          @relation("TicketAssigned")
 
   @@map("members")
 }
@@ -64,7 +64,7 @@ model Skill {
 }
 
 /// *
-///  * 👇 IMPORTANT: map to existing snake_case columns so Prisma does NOT drop them
+/// * 👇 IMPORTANT: map to existing snake_case columns so Prisma does NOT drop them
 model MembersOnTeams {
   memberId   Int      @map("member_id")
   teamId     Int      @map("team_id")
@@ -101,6 +101,7 @@ model Ticket {
   organization_id Int?
   ticket_type     ticket_type     @default(INTERNAL)
   histories       TicketHistory[]
+  TicketTimeLog   TicketTimeLog[]
   assignee        Member?         @relation("TicketAssigned", fields: [assigned_to_id], references: [id])
   organization    Organization?   @relation(fields: [organization_id], references: [id])
   team            Team?           @relation(fields: [team_id], references: [id])
@@ -118,6 +119,22 @@ model TicketHistory {
   ticket     Ticket?       @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("ticket_histories")
+}
+
+model TicketTimeLog {
+  id               Int       @id @default(autoincrement())
+  ticket_id        Int
+  member_id        Int
+  start_time       DateTime  @db.Timestamptz(6)
+  end_time         DateTime? @db.Timestamptz(6)
+  duration_seconds Int?
+  member           Member    @relation(fields: [member_id], references: [id], onDelete: Cascade, map: "fk_ttl_member")
+  ticket           Ticket    @relation(fields: [ticket_id], references: [id], onDelete: Cascade, map: "fk_ttl_ticket")
+
+  @@index([member_id], map: "idx_ttl_member_id")
+  @@index([ticket_id], map: "idx_ttl_ticket_id")
+  @@index([ticket_id, member_id], map: "idx_ttl_ticket_member_combo")
+  @@map("ticket_time_logs")
 }
 
 enum ticket_status {

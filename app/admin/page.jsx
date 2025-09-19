@@ -4,7 +4,13 @@ import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import TeamManager from "../components/TeamManager";
 
-// ---------- helpers ----------
+function formatDuration(totalSeconds = 0) {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return `${h ? `${h}h ` : ""}${m}m`.trim() || "0m";
+}
+
 async function parseJsonSafe(res) {
   const text = await res.text();
   try { return JSON.parse(text); } catch { console.error("Non-JSON response:", text); return null; }
@@ -22,32 +28,24 @@ function classNames(...c) { return c.filter(Boolean).join(" "); }
 
 function statusStyles(status) {
   switch (status) {
-    case "NOT_STARTED":
-      return "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200";
-    case "IN_PROGRESS":
-      return "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200";
-    case "ON_HOLD":
-      return "bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-200";
-    case "COMPLETED":
-      return "bg-green-50 text-green-700 ring-1 ring-inset ring-green-200";
-    case "CANCELLED":
-      return "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200";
-    default:
-      return "bg-gray-100 text-gray-700 ring-1 ring-inset ring-gray-200";
+    case "NOT_STARTED": return "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200";
+    case "IN_PROGRESS": return "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200";
+    case "ON_HOLD": return "bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-200";
+    case "COMPLETED": return "bg-green-50 text-green-700 ring-1 ring-inset ring-green-200";
+    case "CANCELLED": return "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200";
+    default: return "bg-gray-100 text-gray-700 ring-1 ring-inset ring-gray-200";
   }
 }
 
 function typeStyles(type) {
-  if (type === "EXTERNAL") return "bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200";
-  return "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200"; // INTERNAL
+  return type === "EXTERNAL"
+    ? "bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200"
+    : "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200";
 }
 
 function Chip({ children, className }) {
   return (
-    <span className={classNames(
-      "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
-      className
-    )}>
+    <span className={classNames("inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium", className)}>
       {children}
     </span>
   );
@@ -62,9 +60,11 @@ function KeyValue({ label, value }) {
   );
 }
 
-// ---------- page ----------
 export default function DashboardPage() {
   const router = useRouter();
+
+  // time spent per ticket (seconds) — read-only display
+  const [timeSpent, setTimeSpent] = useState({}); // { [ticketId]: total_seconds }
 
   // left side
   const [members, setMembers] = useState([]);
@@ -92,6 +92,21 @@ export default function DashboardPage() {
   const [newType, setNewType] = useState("INTERNAL");
   const [newOrgId, setNewOrgId] = useState("");
   const [creating, setCreating] = useState(false);
+
+  // --- fetch time summary (read-only) ---
+  async function fetchTimeSummary(tix) {
+    if (!tix?.length) return;
+    const ids = tix.map(t => t.id).join(",");
+    const res = await fetch(`/api/tickets/time/summary?ids=${ids}`);
+    const data = await parseJsonSafe(res);
+    if (!res.ok) return;
+
+    const ts = {};
+    for (const row of data.summary || []) {
+      ts[row.ticketId] = row.total_seconds || 0;
+    }
+    setTimeSpent(ts);
+  }
 
   // fetchers
   useEffect(() => {
@@ -139,9 +154,14 @@ export default function DashboardPage() {
       const res = await fetch(`/api/tickets/list?${params.toString()}`);
       const data = await parseJsonSafe(res);
       if (res.ok) {
-        setTickets(prev => (pageToLoad === 1 || replace ? data.tickets : [...prev, ...data.tickets]));
+        let nextList = [];
+        setTickets(prev => {
+          nextList = (pageToLoad === 1 || replace) ? (data.tickets || []) : [...prev, ...(data.tickets || [])];
+          return nextList;
+        });
         setTotal(data.total || 0);
         setPage(pageToLoad + 1);
+        await fetchTimeSummary(nextList);
       }
     } finally {
       loadingRef.current = false;
@@ -224,7 +244,6 @@ export default function DashboardPage() {
     }
   }
 
-  // pretty counts
   const headerCount = useMemo(() => new Intl.NumberFormat().format(total), [total]);
 
   return (
@@ -291,78 +310,74 @@ export default function DashboardPage() {
 
             {/* list */}
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 md:pr-2">
-              {tickets.map((t) => (
-                <article
-                  key={t.id}
-                  className="group border rounded-xl p-3 md:p-4 bg-white hover:bg-slate-50 transition shadow-[0_1px_0_rgba(0,0,0,0.03)]"
-                >
-                  <div className="grid gap-3 md:grid-cols-12 md:gap-4 items-start">
-                    {/* ID + created */}
-                    <div className="md:col-span-2">
-                      <div className="flex items-center justify-between md:block">
-                        <span className="font-mono text-xs md:text-[13px] text-gray-700">
-                          {t.ticket_id}
-                        </span>
-                        <span className="ml-2 md:ml-0 block text-[11px] text-gray-500">
-                          {t.created_at ? new Date(t.created_at).toLocaleString() : ""}
-                        </span>
+              {tickets.map((t) => {
+                const totalDisplay = formatDuration(timeSpent[t.id] || 0);
+                return (
+                  <article
+                    key={t.id}
+                    className="group border rounded-xl p-3 md:p-4 bg-white hover:bg-slate-50 transition shadow-[0_1px_0_rgba(0,0,0,0.03)]"
+                  >
+                    <div className="grid gap-3 md:grid-cols-12 md:gap-4 items-start">
+                      {/* ID + created */}
+                      <div className="md:col-span-2">
+                        <div className="flex items-center justify-between md:block">
+                          <span className="font-mono text-xs md:text-[13px] text-gray-700">{t.ticket_id}</span>
+                          <span className="ml-2 md:ml-0 block text-[11px] text-gray-500">
+                            {t.created_at ? new Date(t.created_at).toLocaleString() : ""}
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Middle: chips + content */}
-                    <div className="md:col-span-6">
-                      <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-                        {t.organization?.name && (
-                          <Chip className="bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200">
-                            {t.organization.name}
+                      {/* Middle: chips + content */}
+                      <div className="md:col-span-6">
+                        <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                          {t.organization?.name && (
+                            <Chip className="bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200">
+                              {t.organization.name}
+                            </Chip>
+                          )}
+                          <Chip className={typeStyles(t.ticket_type)}>{t.ticket_type}</Chip>
+                          <Chip className={statusStyles(t.status)}>{STATUS_LABEL[t.status] ?? t.status}</Chip>
+                          <Chip className="bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200">
+                            ⏱ {totalDisplay}
                           </Chip>
-                        )}
-                        <Chip className={typeStyles(t.ticket_type)}>{t.ticket_type}</Chip>
-                        <Chip className={statusStyles(t.status)}>
-                          {STATUS_LABEL[t.status] ?? t.status}
-                        </Chip>
+                        </div>
+
+                        <div className="font-semibold text-gray-900 truncate">{t.client_name}</div>
+                        <div className="mt-1 text-sm text-gray-700 break-words">{t.description}</div>
                       </div>
 
-                      <div className="font-semibold text-gray-900 truncate">
-                        {t.client_name}
+                      {/* timing */}
+                      <div className="md:col-span-2 space-y-2">
+                        <KeyValue label="Start" value={t.started_at ? new Date(t.started_at).toLocaleString() : "—"} />
+                        <KeyValue label="End" value={t.completed_at ? new Date(t.completed_at).toLocaleString() : "—"} />
                       </div>
-                      <div className="mt-1 text-sm text-gray-700 break-words">
-                        {t.description}
+
+                      {/* team / assignee */}
+                      <div className="md:col-span-1 space-y-2">
+                        <KeyValue label="Team" value={t.team?.name || "—"} />
+                        <KeyValue label="Assigned" value={t.assignee?.name || "—"} />
                       </div>
-                    </div>
 
-                    {/* timing */}
-                    <div className="md:col-span-2 space-y-2">
-                      <KeyValue
-                        label="Start"
-                        value={t.started_at ? new Date(t.started_at).toLocaleString() : "—"}
-                      />
-                      <KeyValue
-                        label="End"
-                        value={t.completed_at ? new Date(t.completed_at).toLocaleString() : "—"}
-                      />
-                    </div>
-
-                    {/* team / assignee */}
-                    <div className="md:col-span-1 space-y-2">
-                      <KeyValue label="Team" value={t.team?.name || "—"} />
-                      <KeyValue label="Assigned" value={t.assignee?.name || "—"} />
-                    </div>
-
-                    {/* action */}
-                    <div className="md:col-span-1">
-                      <div className="flex md:justify-end">
-                        <button
-                          onClick={() => setActiveTicket(t)}
-                          className="text-sm px-3 py-1.5 rounded-lg border bg-white hover:bg-blue-50 text-blue-700 border-blue-200 transition w-full md:w-auto"
-                        >
-                          {t.assignee?.name ? "Reassign" : "Assign"}
-                        </button>
+                      {/* action: assign only (clock controls removed) */}
+                      {/* action: assign only */}
+                      <div className="md:col-span-1">
+                        <div className="flex md:justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setActiveTicket(t)}
+                            className="w-full md:w-auto text-sm px-3 py-1.5 rounded-lg border bg-white hover:bg-blue-50
+                 text-blue-700 border-blue-200 transition whitespace-nowrap"
+                          >
+                            {t.assignee?.name ? "Reassign" : "Assign"}
+                          </button>
+                        </div>
                       </div>
+
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
 
               <div ref={bottomRef} className="h-6" />
               {!tickets.length && (
