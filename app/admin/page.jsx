@@ -65,6 +65,7 @@ export default function DashboardPage() {
 
   // time spent per ticket (seconds) — read-only display
   const [timeSpent, setTimeSpent] = useState({}); // { [ticketId]: total_seconds }
+  const [detailsTicket, setDetailsTicket] = useState(null);
 
   // left side
   const [members, setMembers] = useState([]);
@@ -315,7 +316,8 @@ export default function DashboardPage() {
                 return (
                   <article
                     key={t.id}
-                    className="group border rounded-xl p-3 md:p-4 bg-white hover:bg-slate-50 transition shadow-[0_1px_0_rgba(0,0,0,0.03)]"
+                    onClick={() => setDetailsTicket(t)}
+                    className="group cursor-pointer border rounded-xl p-3 md:p-4 bg-white hover:bg-slate-50 transition shadow-[0_1px_0_rgba(0,0,0,0.03)]"
                   >
                     <div className="grid gap-3 md:grid-cols-12 md:gap-4 items-start">
                       {/* ID + created */}
@@ -344,7 +346,10 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="font-semibold text-gray-900 truncate">{t.client_name}</div>
-                        <div className="mt-1 text-sm text-gray-700 break-words">{t.description}</div>
+                        <div className="mt-1 text-sm text-gray-700 break-words line-clamp-2">
+                          {t.description}
+                        </div>
+
                       </div>
 
                       {/* timing */}
@@ -365,9 +370,9 @@ export default function DashboardPage() {
                         <div className="flex md:justify-end">
                           <button
                             type="button"
-                            onClick={() => setActiveTicket(t)}
+                            onClick={(e) => { e.stopPropagation(); setActiveTicket(t); }}
                             className="w-full md:w-auto text-sm px-3 py-1.5 rounded-lg border bg-white hover:bg-blue-50
-                 text-blue-700 border-blue-200 transition whitespace-nowrap"
+                   text-blue-700 border-blue-200 transition whitespace-nowrap"
                           >
                             {t.assignee?.name ? "Reassign" : "Assign"}
                           </button>
@@ -394,7 +399,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-2xl border shadow-xl w-full max-w-lg">
             <div className="px-5 py-4 border-b">
               <h3 className="font-semibold">Assign {activeTicket.ticket_id}</h3>
-              <p className="text-sm text-gray-600 mt-1">{activeTicket.description}</p>
+              <p className="text-sm text-gray-600 mt-1 line-clamp-2">{activeTicket.description}</p>
             </div>
 
             <div className="px-5 py-4 space-y-2 max-h-80 overflow-y-auto">
@@ -499,6 +504,85 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+
+      <TicketDetailsModal
+        ticket={detailsTicket}
+        onClose={() => setDetailsTicket(null)}
+        totalSeconds={detailsTicket ? (timeSpent[detailsTicket.id] || 0) : 0}
+      />
+
     </div>
   );
+
+  function TicketDetailsModal({ ticket, onClose, totalSeconds }) {
+    if (!ticket) return null;
+    const created = ticket.created_at ? new Date(ticket.created_at).toLocaleString() : "—";
+    const started = ticket.started_at ? new Date(ticket.started_at).toLocaleString() : "—";
+    const completed = ticket.completed_at ? new Date(ticket.completed_at).toLocaleString() : "—";
+    const updated = ticket.updated_at ? new Date(ticket.updated_at).toLocaleString() : "—";
+
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-2"
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      >
+        <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl border">
+          {/* Header */}
+          <div className="sticky top-0 bg-white/90 backdrop-blur border-b px-5 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-500">Ticket</span>
+                <span className="font-semibold">{ticket.ticket_id}</span>
+              </div>
+              <span className="inline-flex items-center rounded-full border bg-violet-50 text-violet-700 ring-1 ring-violet-200 px-2 py-0.5 text-[11px]">
+                ⏱ {formatDuration(totalSeconds || 0)}
+              </span>
+            </div>
+            <button onClick={onClose} className="px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50">
+              Close
+            </button>
+          </div>
+
+          {/* Body (scrollable) */}
+          <div className="px-5 py-4 space-y-4 overflow-y-auto max-h-[calc(90vh-56px)]">
+            <div className="flex flex-wrap gap-2">
+              <Chip className={statusStyles(ticket.status)}>{ticket.status}</Chip>
+              <Chip className={ticket.ticket_type === "EXTERNAL"
+                ? "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200"
+                : "bg-slate-50 text-slate-700 ring-1 ring-slate-200"}>
+                {ticket.ticket_type}
+              </Chip>
+              {ticket.organization?.name && <Chip className="bg-sky-50 text-sky-700 ring-1 ring-sky-200">Org: {ticket.organization.name}</Chip>}
+              {ticket.team?.name && <Chip className="bg-teal-50 text-teal-700 ring-1 ring-teal-200">Team: {ticket.team.name}</Chip>}
+              {ticket.assignee?.name && <Chip className="bg-amber-50 text-amber-700 ring-1 ring-amber-200">Assignee: {ticket.assignee.name}</Chip>}
+            </div>
+
+            <div>
+              <div className="text-xs text-gray-500">Client name</div>
+              <div className="text-sm font-medium">{ticket.client_name}</div>
+            </div>
+
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Description</div>
+              {/* Long text: scroll inside a soft container */}
+              <div className="bg-gray-50 rounded-lg border p-3 text-sm text-gray-800 whitespace-pre-wrap max-h-60 overflow-y-auto">
+                {ticket.description || "—"}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div><div className="text-xs text-gray-500">Created</div><div>{created}</div></div>
+              <div><div className="text-xs text-gray-500">Started</div><div>{started}</div></div>
+              <div><div className="text-xs text-gray-500">Completed</div><div>{completed}</div></div>
+              <div><div className="text-xs text-gray-500">Updated</div><div>{updated}</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 }
