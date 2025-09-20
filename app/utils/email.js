@@ -18,7 +18,7 @@ export async function sendAssignmentEmail({ to, memberName, ticketId, ticketDesc
   });
 
   const mailOptions = {
-  from: `"NEO Help Desk" <${process.env.SMTP_USER}>`,
+  from: `"Task Manager" <${process.env.SMTP_USER}>`,
   to,
   subject: `🎫 New Ticket Assigned: ${ticketId}`,
   text: `Hi ${memberName},\n\nYou have been assigned a new ticket.\n\nTicket: ${ticketId}\nDescription: ${ticketDescription}\n\nPlease log in to the system to view details.`,

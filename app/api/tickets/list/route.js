@@ -1,47 +1,47 @@
-// app/api/tickets/list/route.js
-import { NextResponse } from "next/server";
-import { PrismaClient, ticket_type } from "@prisma/client";
-import { requireAuth, allowedOrgIdsFor, getOrgDescendantIds } from "@/app/lib/auth";
-const prisma = new PrismaClient();
+import prisma from "../../../lib/prisma";
 
 export async function GET(req) {
   try {
-    const { session, error, status } = await requireAuth(req);
-    if (error) return NextResponse.json({ error }, { status });
+    const url = new URL(req.url);
+    const page = Number(url.searchParams.get("page") || 1);
+    const pageSize = Number(url.searchParams.get("pageSize") || 20);
+    const q = url.searchParams.get("q")?.trim();
+    const orgId = url.searchParams.get("orgId");
+    const type = url.searchParams.get("type"); // INTERNAL | EXTERNAL
+    const assigneeId = url.searchParams.get("assigneeId"); // <— NEW
 
-    const { searchParams } = new URL(req.url);
-    const page = Number(searchParams.get("page") || 1);
-    const pageSize = Math.min(1000, Number(searchParams.get("pageSize") || 50));
-    const type = searchParams.get("type") || "EXTERNAL";
-    const orgId = Number(searchParams.get("orgId") || session.orgId);
-    const includeChildren = searchParams.get("includeChildren") === "1";
-
-    let allowed = await allowedOrgIdsFor(session);
-    if (!allowed.includes(orgId)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-    let orgIds = [orgId];
-    if (includeChildren && session.role === "MANAGER") {
-      orgIds = await getOrgDescendantIds(orgId);
-      // still intersect with allowed
-      orgIds = orgIds.filter(id => allowed.includes(id));
+    const where = {};
+    if (q) {
+      where.OR = [
+        { ticket_id: { contains: q, mode: "insensitive" } },
+        { client_name: { contains: q, mode: "insensitive" } },
+        { description: { contains: q, mode: "insensitive" } },
+        { organization: { name: { contains: q, mode: "insensitive" } } },
+      ];
     }
+    if (orgId && orgId !== "all") where.organization_id = Number(orgId);
+    if (type && type !== "all") where.ticket_type = type;
+    if (assigneeId) where.assigned_to_id = Number(assigneeId); // <— NEW
 
-    const where = {
-      ticket_type: type === "EXTERNAL" ? ticket_type.EXTERNAL : ticket_type.INTERNAL,
-      organization_id: { in: orgIds },
-    };
+    const [tickets, total] = await Promise.all([
+      prisma.ticket.findMany({
+        where,
+        orderBy: { created_at: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          organization: true,
+          team: true,
+          assignee: true,
+          histories: false, // set true if you want history
+        },
+      }),
+      prisma.ticket.count({ where }),
+    ]);
 
-    const tickets = await prisma.ticket.findMany({
-      where,
-      include: { organization: true, team: true, assignee: true, histories: true },
-      orderBy: { created_at: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    });
-
-    return NextResponse.json({ tickets });
+    return new Response(JSON.stringify({ tickets, total }), { status: 200 });
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Failed" }, { status: 500 });
+    console.error("tickets/list", e);
+    return new Response(JSON.stringify({ error: "Failed to list tickets" }), { status: 500 });
   }
 }

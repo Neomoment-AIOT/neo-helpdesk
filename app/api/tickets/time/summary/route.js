@@ -1,42 +1,46 @@
-export const runtime = "nodejs";
-
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getAuth } from "@/lib/auth";
-import { getOrgSubtreeIds } from "@/lib/access";
+// app/api/tickets/time/summary/route.js
+import prisma from "../../../../lib/prisma";
 
 export async function GET(req) {
-  const { user } = await getAuth();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const { searchParams } = new URL(req.url);
+    const ids = (searchParams.get("ids") || "")
+      .split(",")
+      .map((s) => Number(s))
+      .filter(Boolean);
+    if (!ids.length) {
+      return new Response(JSON.stringify({ summary: [] }), { status: 200 });
+    }
 
-  const url = new URL(req.url);
-  const idsParam = url.searchParams.get("ids");
-  if (!idsParam) return NextResponse.json({ summary: [] });
-  const ids = idsParam.split(",").map(s => Number(s)).filter(Boolean);
+    // Sum finished logs
+    const finished = await prisma.ticketTimeLog.groupBy({
+      by: ["ticket_id"],
+      where: { ticket_id: { in: ids }, end_time: { not: null } },
+      _sum: { duration_seconds: true },
+    });
 
-  const tickets = await prisma.ticket.findMany({
-    where: { id: { in: ids } },
-    select: { id: true, organization_id: true },
-  });
+    // Active logs (no end_time)
+    const active = await prisma.ticketTimeLog.findMany({
+      where: { ticket_id: { in: ids }, end_time: null },
+      select: { ticket_id: true, start_time: true },
+    });
 
-  let allowed;
-  if (user.role === "MANAGER") {
-    const subtree = await getOrgSubtreeIds(user.organization_id);
-    allowed = new Set(subtree);
-  } else {
-    allowed = new Set([user.organization_id]);
+    const sumMap = Object.fromEntries(
+      finished.map((r) => [r.ticket_id, r._sum.duration_seconds || 0])
+    );
+    const activeMap = Object.fromEntries(
+      active.map((r) => [r.ticket_id, r.start_time])
+    );
+
+    const summary = ids.map((id) => ({
+      ticketId: id,
+      total_seconds: sumMap[id] || 0,
+      active_started_at: activeMap[id] || null,
+    }));
+
+    return new Response(JSON.stringify({ summary }), { status: 200 });
+  } catch (e) {
+    console.error("time/summary", e);
+    return new Response(JSON.stringify({ error: "Failed" }), { status: 500 });
   }
-
-  const allowedTicketIds = tickets.filter(t => allowed.has(t.organization_id)).map(t => t.id);
-  if (!allowedTicketIds.length) return NextResponse.json({ summary: [] });
-
-  const rows = await prisma.ticketTimeLog.groupBy({
-    by: ["ticket_id"],
-    where: { ticket_id: { in: allowedTicketIds } },
-    _sum: { duration_seconds: true },
-  });
-
-  return NextResponse.json({
-    summary: rows.map(r => ({ ticketId: r.ticket_id, total_seconds: r._sum.duration_seconds || 0 })),
-  });
 }
