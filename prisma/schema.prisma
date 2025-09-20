@@ -8,14 +8,34 @@ datasource db {
 }
 
 model Organization {
-  id                Int      @id @default(autoincrement())
-  name              String   @unique
-  slug              String?  @unique
-  created_at        DateTime @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime @default(now()) @db.Timestamptz(6)
-  customer_password String?
-  tickets           Ticket[]
+  id                  Int                @id @default(autoincrement())
+  name                String             @unique
+  slug                String?            @unique
+  created_at          DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime           @default(now()) @db.Timestamptz(6)
+  customer_password   String?
+  parent_id           Int?
+  whatsapp            String?            @db.VarChar(100)
+  slack_id            String?            @db.VarChar(100)
+  discord_id          String?            @db.VarChar(100)
+  linkedin_url        String?            @db.VarChar(255)
+  email               String?            @db.VarChar(255)
+  address_line1       String?            @db.VarChar(255)
+  address_line2       String?            @db.VarChar(255)
+  city                String?            @db.VarChar(120)
+  state               String?            @db.VarChar(120)
+  postal_code         String?            @db.VarChar(40)
+  country             String?            @db.VarChar(120)
+  latitude            Float?
+  longitude           Float?
+  members             Member[]
+  org_custom_roles    org_custom_roles[]
+  org_users           org_users[]
+  organizations       Organization?      @relation("organizationsToorganizations", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_organizations_parent_id")
+  other_organizations Organization[]     @relation("organizationsToorganizations")
+  tickets             Ticket[]
 
+  @@index([parent_id], map: "idx_organizations_parent_id")
   @@map("organizations")
 }
 
@@ -46,12 +66,15 @@ model Member {
   password        String            @db.VarChar(255)
   contact         String?           @db.VarChar(50)
   skillset        String?           @db.VarChar(255)
-  team            Team?             @relation("PrimaryTeam", fields: [team_id], references: [id])
+  organization_id Int?
+  organizations   Organization?     @relation(fields: [organization_id], references: [id], onUpdate: NoAction)
+  team            Team?             @relation("PrimaryTeam", fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   skillLinks      MembersOnSkills[]
   teamLinks       MembersOnTeams[]
   TicketTimeLog   TicketTimeLog[]
   assignedTickets Ticket[]          @relation("TicketAssigned")
 
+  @@index([organization_id], map: "idx_members_organization_id")
   @@map("members")
 }
 
@@ -68,9 +91,9 @@ model Skill {
 model MembersOnTeams {
   memberId   Int      @map("member_id")
   teamId     Int      @map("team_id")
-  assignedAt DateTime @default(now())
-  member     Member   @relation(fields: [memberId], references: [id])
-  team       Team     @relation(fields: [teamId], references: [id])
+  assignedat DateTime @default(now()) @db.Timestamp(6)
+  member     Member   @relation(fields: [memberId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@id([memberId, teamId])
   @@map("members_teams")
@@ -79,33 +102,36 @@ model MembersOnTeams {
 model MembersOnSkills {
   memberId Int    @map("member_id")
   skillId  Int    @map("skill_id")
-  member   Member @relation(fields: [memberId], references: [id])
-  skill    Skill  @relation(fields: [skillId], references: [id])
+  member   Member @relation(fields: [memberId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  skill    Skill  @relation(fields: [skillId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@id([memberId, skillId])
   @@map("members_skills")
 }
 
 model Ticket {
-  id              Int             @id @default(autoincrement())
-  ticket_id       String          @unique @default(dbgenerated("generate_ticket_id()"))
-  client_name     String
-  description     String
-  team_id         Int?
-  assigned_to_id  Int?
-  status          ticket_status   @default(NOT_STARTED)
-  started_at      DateTime?       @db.Timestamptz(6)
-  completed_at    DateTime?       @db.Timestamptz(6)
-  created_at      DateTime        @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime        @default(now()) @db.Timestamptz(6)
-  organization_id Int?
-  ticket_type     ticket_type     @default(INTERNAL)
-  histories       TicketHistory[]
-  TicketTimeLog   TicketTimeLog[]
-  assignee        Member?         @relation("TicketAssigned", fields: [assigned_to_id], references: [id])
-  organization    Organization?   @relation(fields: [organization_id], references: [id])
-  team            Team?           @relation(fields: [team_id], references: [id])
+  id                 Int             @id @default(autoincrement())
+  ticket_id          String          @unique @default(dbgenerated("generate_ticket_id()"))
+  client_name        String
+  description        String
+  team_id            Int?
+  assigned_to_id     Int?
+  status             ticket_status   @default(NOT_STARTED)
+  started_at         DateTime?       @db.Timestamptz(6)
+  completed_at       DateTime?       @db.Timestamptz(6)
+  created_at         DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime        @default(now()) @db.Timestamptz(6)
+  organization_id    Int?
+  ticket_type        ticket_type     @default(INTERNAL)
+  created_by_user_id Int?
+  histories          TicketHistory[]
+  TicketTimeLog      TicketTimeLog[]
+  users              users?          @relation(fields: [created_by_user_id], references: [id], onUpdate: NoAction, map: "fk_tickets_created_by_user")
+  assignee           Member?         @relation("TicketAssigned", fields: [assigned_to_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organization       Organization?   @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  team               Team?           @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
+  @@index([created_by_user_id], map: "idx_tickets_created_by_user_id")
   @@map("tickets")
 }
 
@@ -128,13 +154,62 @@ model TicketTimeLog {
   start_time       DateTime  @db.Timestamptz(6)
   end_time         DateTime? @db.Timestamptz(6)
   duration_seconds Int?
-  member           Member    @relation(fields: [member_id], references: [id], onDelete: Cascade, map: "fk_ttl_member")
-  ticket           Ticket    @relation(fields: [ticket_id], references: [id], onDelete: Cascade, map: "fk_ttl_ticket")
+  member           Member    @relation(fields: [member_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ttl_member")
+  ticket           Ticket    @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ttl_ticket")
 
   @@index([member_id], map: "idx_ttl_member_id")
   @@index([ticket_id], map: "idx_ttl_ticket_id")
   @@index([ticket_id, member_id], map: "idx_ttl_ticket_member_combo")
   @@map("ticket_time_logs")
+}
+
+model f {
+  f Int @id
+}
+
+model org_custom_roles {
+  id               Int          @id @default(autoincrement())
+  org_id           Int
+  name             String       @db.VarChar(100)
+  can_send_tickets Boolean      @default(true)
+  can_create_users Boolean      @default(false)
+  can_create_orgs  Boolean      @default(false)
+  created_at       DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime     @default(now()) @db.Timestamptz(6)
+  can_view_tickets Boolean      @default(true)
+  organizations    Organization @relation(fields: [org_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_org_custom_roles_org")
+  org_users        org_users[]
+
+  @@unique([org_id, name])
+  @@unique([org_id, name], map: "uq_org_custom_roles_org_name")
+}
+
+model org_users {
+  user_id          Int
+  org_id           Int
+  role             org_user_role     @default(VIEWER)
+  created_at       DateTime          @default(now()) @db.Timestamptz(6)
+  custom_role_id   Int?
+  org_custom_roles org_custom_roles? @relation(fields: [custom_role_id], references: [id], onUpdate: NoAction, map: "fk_org_users_custom_role")
+  organizations    Organization      @relation(fields: [org_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_org_users_org")
+  users            users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_org_users_user")
+
+  @@id([user_id, org_id], map: "pk_org_users")
+  @@index([custom_role_id], map: "idx_org_users_custom_role")
+  @@index([custom_role_id], map: "idx_org_users_custom_role_id")
+  @@index([org_id], map: "idx_org_users_org_id")
+  @@index([user_id], map: "idx_org_users_user_id")
+}
+
+model users {
+  id            Int         @id @default(autoincrement())
+  name          String
+  email         String      @unique @db.VarChar(255)
+  password_hash String      @db.VarChar(255)
+  created_at    DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime    @default(now()) @db.Timestamptz(6)
+  org_users     org_users[]
+  tickets       Ticket[]
 }
 
 enum ticket_status {
@@ -148,4 +223,11 @@ enum ticket_status {
 enum ticket_type {
   INTERNAL
   EXTERNAL
+}
+
+enum org_user_role {
+  MANAGER
+  DEVELOPER
+  TESTER
+  VIEWER
 }
