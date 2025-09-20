@@ -54,6 +54,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4">
       <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-6">
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         <div className="mb-6">
           <h1 className="text-xl font-semibold">Create your account</h1>
           <p className="text-sm !text-gray-500">Register your organization and start submitting tickets.</p>
@@ -125,6 +126,8 @@ export default function LoginPage() {
           </button>
         </div>
 =======
+=======
+>>>>>>> Stashed changes
         {!orgPick ? (
           <>
             <h1 className="text-xl font-semibold mb-2">Welcome back</h1>
@@ -162,6 +165,9 @@ export default function LoginPage() {
             {err && <p className="text-sm text-red-600 mt-3">{err}</p>}
           </>
         )}
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
       </div>
     </div>

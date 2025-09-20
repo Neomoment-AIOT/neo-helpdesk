@@ -70,6 +70,7 @@ export default function CustomerTicketPage() {
           </div>
           <div className="flex items-center gap-2">
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             <button
               onClick={() => router.push("/customer/my-tickets")}
               className="text-sm bg-gray-900 !text-white rounded-lg px-3 py-1.5"
@@ -86,11 +87,16 @@ export default function CustomerTicketPage() {
             <a href="/customer/my-tickets" className="text-sm bg-gray-900 text-white rounded-lg px-3 py-1.5">My tickets</a>
             <button onClick={logout} className="text-sm text-gray-700 border rounded-lg px-3 py-1.5">Log out</button>
 >>>>>>> Stashed changes
+=======
+            <a href="/customer/my-tickets" className="text-sm bg-gray-900 text-white rounded-lg px-3 py-1.5">My tickets</a>
+            <button onClick={logout} className="text-sm text-gray-700 border rounded-lg px-3 py-1.5">Log out</button>
+>>>>>>> Stashed changes
           </div>
         </div>
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-6">
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
         <div className="bg-white border rounded-2xl shadow-sm p-5 sm:p-6">
           <div className="mb-4">
@@ -105,6 +111,10 @@ export default function CustomerTicketPage() {
         <div className="bg-white border rounded-2xl shadow-sm p-5">
           <h1 className="text-lg font-semibold mb-2">Submit a Support Ticket</h1>
 >>>>>>> Stashed changes
+=======
+        <div className="bg-white border rounded-2xl shadow-sm p-5">
+          <h1 className="text-lg font-semibold mb-2">Submit a Support Ticket</h1>
+>>>>>>> Stashed changes
           <form onSubmit={submitTicket} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Organization</label>
@@ -113,6 +123,7 @@ export default function CustomerTicketPage() {
               </select>
             </div>
             <div>
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium mb-1">Describe the issue</label>
@@ -133,16 +144,25 @@ export default function CustomerTicketPage() {
               <label className="block text-sm font-medium mb-1">Your name</label>
               <input className="w-full border rounded-lg px-3 py-2 text-sm" value={clientName} onChange={e=>setClientName(e.target.value)} />
             </div>
+=======
+              <label className="block text-sm font-medium mb-1">Your name</label>
+              <input className="w-full border rounded-lg px-3 py-2 text-sm" value={clientName} onChange={e=>setClientName(e.target.value)} />
+            </div>
+>>>>>>> Stashed changes
             <div>
               <label className="block text-sm font-medium mb-1">Describe the issue</label>
               <textarea className="w-full border rounded-lg px-3 py-2 text-sm min-h-[140px]" value={desc} onChange={e=>setDesc(e.target.value)} />
             </div>
             {msg && <p className="text-sm">{msg}</p>}
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
             {lastTicketId && (
               <div className="mt-2 rounded-lg bg-green-50 border border-green-200 p-3 text-sm">
                 <div className="font-medium">Your ticket ID:</div>
                 <div className="font-mono">{lastTicketId}</div>
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
                 <div className="mt-1 !text-gray-600">
                   Our team will contact you shortly. You can track it under <strong>My tickets</strong>.
@@ -159,6 +179,12 @@ export default function CustomerTicketPage() {
                 className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 !text-white text-sm font-medium rounded-lg px-4 py-2.5 disabled:opacity-60"
               >
 =======
+              <button type="submit" disabled={submitting} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-4 py-2.5 disabled:opacity-60">
+>>>>>>> Stashed changes
+=======
+              </div>
+            )}
+            <div className="pt-2">
               <button type="submit" disabled={submitting} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-4 py-2.5 disabled:opacity-60">
 >>>>>>> Stashed changes
                 {submitting ? "Submitting..." : "Submit ticket"}

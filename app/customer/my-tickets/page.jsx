@@ -9,6 +9,7 @@ const STATUS_LABEL = { NOT_STARTED:"Not started", IN_PROGRESS:"In progress", ON_
 function Card({ t }) {
   return (
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     <span className="inline-flex items-center px-2 py-0.5 text-[10px] rounded-full bg-gray-100 border">
       {children}
     </span>
@@ -195,6 +196,16 @@ function TicketModal({ ticket, onClose, seconds }) {
       <div className="mt-1 text-[12px] text-gray-600 line-clamp-3">{t.description}</div>
     </button>
 >>>>>>> Stashed changes
+=======
+    <button className="w-full text-left rounded-lg border bg-white px-3 py-3 shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-mono text-gray-500">{t.ticket_id}</span>
+        <span className="text-[11px] text-gray-500">{t.organization?.name}</span>
+      </div>
+      <div className="mt-1 text-sm font-medium">{t.client_name}</div>
+      <div className="mt-1 text-[12px] text-gray-600 line-clamp-3">{t.description}</div>
+    </button>
+>>>>>>> Stashed changes
   );
 }
 
@@ -257,6 +268,7 @@ export default function MyTicketsPage() {
           </div>
           <div className="flex items-center gap-2">
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             <button
               onClick={() => router.push("/customer/ticket")}
               className="text-sm border rounded-lg px-3 py-1.5 hover:bg-gray-50"
@@ -270,6 +282,8 @@ export default function MyTicketsPage() {
               Log out
             </button>
 =======
+=======
+>>>>>>> Stashed changes
             <select value={orgFilter} onChange={e=>setOrgFilter(e.target.value)} className="p-2 border rounded-lg text-sm">
               <option value="all">All ({orgs.parent?.name ?? "Org"} + subs)</option>
               {orgs.parent && <option value={orgs.parent.id}>{orgs.parent.name}</option>}
@@ -277,6 +291,9 @@ export default function MyTicketsPage() {
             </select>
             <a href="/customer/ticket" className="text-sm border rounded-lg px-3 py-1.5">Create ticket</a>
             <button onClick={()=>{ clearCustomerSession(); router.replace("/login"); }} className="text-sm border rounded-lg px-3 py-1.5">Log out</button>
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
           </div>
         </div>
