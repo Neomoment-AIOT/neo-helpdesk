@@ -1,55 +1,59 @@
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveCustomerSession } from "./lib/clientAuth";
+import { saveCustomerSession } from "app/lib/clientAuth.js";
 
-export default function SignupPage() {
+export default function LoginPage() {
   const router = useRouter();
-  const [orgName, setOrgName] = useState("");
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [orgPick, setOrgPick] = useState(null); // { memberships, creds }
 
-  async function handleSignup(e) {
-    e.preventDefault();
-    setErr("");
-    if (!orgName.trim() || !name.trim() || !email.trim() || !pass.trim()) {
-      setErr("Please fill all fields.");
-      return;
-    }
-    setLoading(true);
+  async function submit(creds, orgId) {
+    const body = orgId ? { ...creds, orgId } : creds;
+    const res = await fetch("/api/public/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || "Login failed");
+    return data;
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault(); setErr(""); setLoading(true);
     try {
-      const res = await fetch("/api/public/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          organizationName: orgName.trim(),
-          name: name.trim(),
-          email: email.trim(),
-          password: pass,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setErr(data?.error || "Sign up failed");
-      } else {
-        // expected: { token, orgId, orgName, name, email }
-        saveCustomerSession(data);
-        router.replace("/customer/ticket");
+      const creds = { email: email.trim(), password };
+      const data = await submit(creds);
+      if (Array.isArray(data.memberships) && data.memberships.length > 1) {
+        setOrgPick({ memberships: data.memberships, creds });
+        return;
       }
-    } catch {
-      setErr("Network error. Try again.");
-    } finally {
-      setLoading(false);
-    }
+      const s = saveCustomerSession(data);
+      if (s?.role === "MANAGER") router.replace("/dashboard");
+      else router.replace("/customer/ticket");
+    } catch (e) { setErr(e.message); }
+    finally { setLoading(false); }
+  }
+
+  async function pickOrg(orgId) {
+    setErr(""); setLoading(true);
+    try {
+      const data = await submit(orgPick.creds, orgId);
+      const s = saveCustomerSession(data);
+      if (s?.role === "MANAGER") router.replace("/dashboard");
+      else router.replace("/customer/ticket");
+    } catch (e) { setErr(e.message); }
+    finally { setLoading(false); }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4">
       <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-6">
+<<<<<<< Updated upstream
         <div className="mb-6">
           <h1 className="text-xl font-semibold">Create your account</h1>
           <p className="text-sm !text-gray-500">Register your organization and start submitting tickets.</p>
@@ -120,6 +124,45 @@ export default function SignupPage() {
             Log in
           </button>
         </div>
+=======
+        {!orgPick ? (
+          <>
+            <h1 className="text-xl font-semibold mb-2">Welcome back</h1>
+            <p className="text-sm text-gray-500 mb-4">Log in with your email and password.</p>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200" value={email} onChange={e=>setEmail(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Password</label>
+                <input type="password" className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200" value={password} onChange={e=>setPassword(e.target.value)} />
+              </div>
+              {err && <p className="text-sm text-red-600">{err}</p>}
+              <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg py-2.5 disabled:opacity-60">
+                {loading ? "Signing in..." : "Sign in"}
+              </button>
+            </form>
+            <div className="mt-4 text-center text-sm">New here? <a href="/signup" className="text-blue-600 hover:underline">Create an account</a></div>
+          </>
+        ) : (
+          <>
+            <h1 className="text-lg font-semibold mb-2">Choose an organization</h1>
+            <p className="text-xs text-gray-500 mb-3">Pick one to continue.</p>
+            <ul className="space-y-2">
+              {orgPick.memberships.map(m => (
+                <li key={m.orgId}>
+                  <button onClick={()=>pickOrg(m.orgId)} className="w-full text-left border rounded-lg px-3 py-2 hover:bg-gray-50">
+                    <div className="text-sm font-medium">{m.orgName}</div>
+                    <div className="text-[11px] text-gray-500">Role: {m.role}</div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {err && <p className="text-sm text-red-600 mt-3">{err}</p>}
+          </>
+        )}
+>>>>>>> Stashed changes
       </div>
     </div>
   );

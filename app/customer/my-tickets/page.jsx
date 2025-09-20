@@ -1,36 +1,14 @@
 "use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getCustomerSession, clearCustomerSession } from "../../lib/clientAuth";
+import { getCustomerSession, clearCustomerSession, authHeaders } from "../../lib/clientAuth";
 
 const STATUS_ORDER = ["NOT_STARTED", "IN_PROGRESS", "ON_HOLD", "COMPLETED", "CANCELLED"];
-const STATUS_LABEL = {
-  NOT_STARTED: "Not started",
-  IN_PROGRESS: "In progress",
-  ON_HOLD: "On hold",
-  COMPLETED: "Completed",
-  CANCELLED: "Cancelled",
-};
+const STATUS_LABEL = { NOT_STARTED:"Not started", IN_PROGRESS:"In progress", ON_HOLD:"On hold", COMPLETED:"Completed", CANCELLED:"Cancelled" };
 
-const ACCENTS = {
-  NOT_STARTED: "bg-rose-500",
-  IN_PROGRESS: "bg-amber-500",
-  ON_HOLD: "bg-yellow-500",
-  COMPLETED: "bg-emerald-500",
-  CANCELLED: "bg-slate-400",
-};
-
-// 🔹 NEW: format seconds -> "1h 12m"
-function formatDuration(totalSeconds = 0) {
-  const s = Math.max(0, Math.floor(totalSeconds));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  return `${h ? `${h}h ` : ""}${m}m`.trim() || "0m";
-}
-
-function Badge({ children }) {
+function Card({ t }) {
   return (
+<<<<<<< Updated upstream
     <span className="inline-flex items-center px-2 py-0.5 text-[10px] rounded-full bg-gray-100 border">
       {children}
     </span>
@@ -207,18 +185,26 @@ function TicketModal({ ticket, onClose, seconds }) {
         </div>
       </div>
     </div>
+=======
+    <button className="w-full text-left rounded-lg border bg-white px-3 py-3 shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-mono text-gray-500">{t.ticket_id}</span>
+        <span className="text-[11px] text-gray-500">{t.organization?.name}</span>
+      </div>
+      <div className="mt-1 text-sm font-medium">{t.client_name}</div>
+      <div className="mt-1 text-[12px] text-gray-600 line-clamp-3">{t.description}</div>
+    </button>
+>>>>>>> Stashed changes
   );
 }
 
 export default function MyTicketsPage() {
   const router = useRouter();
   const [session, setSession] = useState(null);
-  const [allTickets, setAllTickets] = useState([]);
+  const [orgs, setOrgs] = useState({ parent: null, children: [] });
+  const [orgFilter, setOrgFilter] = useState("all");
+  const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(null);
-
-  // 🔹 NEW: ticketId -> total_seconds
-  const [timeSpent, setTimeSpent] = useState({});
 
   useEffect(() => {
     const s = getCustomerSession();
@@ -227,52 +213,42 @@ export default function MyTicketsPage() {
   }, [router]);
 
   useEffect(() => {
-    async function load() {
-      if (!session) return;
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/tickets/list?orgId=${session.orgId}&type=EXTERNAL&page=1&pageSize=1000`);
-        const data = await res.json();
-        if (res.ok) setAllTickets(data.tickets || []);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+    if (!session) return;
+    (async () => {
+      const res = await fetch(`/api/organizations/children?parent_id=${session.orgId}`, { headers: authHeaders() });
+      const data = await res.json().catch(()=>({}));
+      setOrgs({ parent: data.parent || null, children: data.children || [] });
+    })();
   }, [session]);
 
-  // 🔹 NEW: fetch time summary after tickets are known — uses your existing endpoint path
   useEffect(() => {
-    async function loadSummary() {
-      if (!allTickets.length) { setTimeSpent({}); return; }
-      const ids = allTickets.map(t => t.id).join(",");
-      const res = await fetch(`/api/tickets/time/summary?ids=${ids}`);
-      const data = await res.json().catch(() => ({}));
-      // Expect: { summary: [{ ticketId, total_seconds }] }
-      const map = {};
-      for (const row of (data && data.summary) || []) {
-        map[row.ticketId] = row.total_seconds || 0;
+    if (!session) return;
+    (async () => {
+      setLoading(true);
+      const qs = new URLSearchParams({ page: "1", pageSize: "1000", type: "EXTERNAL" });
+      if (orgFilter === "all") {
+        qs.set("orgId", String(session.orgId));
+        qs.set("includeChildren", "1");
+      } else {
+        qs.set("orgId", String(orgFilter));
       }
-      setTimeSpent(map);
-    }
-    loadSummary();
-  }, [allTickets]);
+      const res = await fetch(`/api/tickets/list?${qs}`, { headers: authHeaders() });
+      const data = await res.json();
+      if (res.ok) setTickets(data.tickets || []);
+      setLoading(false);
+    })();
+  }, [session, orgFilter]);
 
   const grouped = useMemo(() => {
-    const onlyExternal = allTickets.filter(t => t.ticket_type === "EXTERNAL");
-    const map = Object.fromEntries(STATUS_ORDER.map((s) => [s, []]));
-    for (const t of onlyExternal) {
-      if (map[t.status]) map[t.status].push(t);
-      else map.NOT_STARTED.push(t);
-    }
-    return map;
-  }, [allTickets]);
+    const m = Object.fromEntries(STATUS_ORDER.map(s=>[s, []]));
+    for (const t of tickets) { (m[t.status] || m.NOT_STARTED).push(t); }
+    return m;
+  }, [tickets]);
 
   if (!session) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Top bar */}
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
@@ -280,6 +256,7 @@ export default function MyTicketsPage() {
             <div className="font-semibold">{session.orgName}</div>
           </div>
           <div className="flex items-center gap-2">
+<<<<<<< Updated upstream
             <button
               onClick={() => router.push("/customer/ticket")}
               className="text-sm border rounded-lg px-3 py-1.5 hover:bg-gray-50"
@@ -292,38 +269,39 @@ export default function MyTicketsPage() {
             >
               Log out
             </button>
+=======
+            <select value={orgFilter} onChange={e=>setOrgFilter(e.target.value)} className="p-2 border rounded-lg text-sm">
+              <option value="all">All ({orgs.parent?.name ?? "Org"} + subs)</option>
+              {orgs.parent && <option value={orgs.parent.id}>{orgs.parent.name}</option>}
+              {orgs.children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <a href="/customer/ticket" className="text-sm border rounded-lg px-3 py-1.5">Create ticket</a>
+            <button onClick={()=>{ clearCustomerSession(); router.replace("/login"); }} className="text-sm border rounded-lg px-3 py-1.5">Log out</button>
+>>>>>>> Stashed changes
           </div>
         </div>
       </div>
 
-      {/* Board */}
-      <div className="max-w-6xl mx-auto px-4 py-5 h-[calc(100vh-120px)] flex flex-col">
+      <div className="max-w-6xl mx-auto px-4 py-5">
         <h1 className="text-lg font-semibold mb-3">My tickets</h1>
-
         {loading ? (
           <div className="text-sm !text-gray-500">Loading…</div>
         ) : (
-          <div className="flex gap-3 overflow-x-auto pb-3 flex-1 min-h-0">
-            {STATUS_ORDER.map((s) => (
-              <Column
-                key={s}
-                status={s}
-                title={STATUS_LABEL[s]}
-                tickets={grouped[s]}
-                onCardClick={setSelected}
-                timeSpentMap={timeSpent}   // 🔹 pass seconds map down
-              />
+          <div className="flex gap-3 overflow-x-auto pb-3">
+            {STATUS_ORDER.map(s => (
+              <div key={s} className="flex-0 w-[300px] rounded-xl border bg-white p-2">
+                <div className="sticky top-0 bg-white z-10 pb-2">
+                  <div className="text-sm font-semibold">{STATUS_LABEL[s]} <span className="text-xs text-gray-500">({grouped[s].length})</span></div>
+                </div>
+                <div className="space-y-2">
+                  {grouped[s].map(t => <Card key={t.id} t={t} />)}
+                  {!grouped[s].length && <div className="text-xs text-gray-400 text-center py-6">No tickets</div>}
+                </div>
+              </div>
             ))}
           </div>
         )}
       </div>
-
-      {/* Modal mirrors the same time */}
-      <TicketModal
-        ticket={selected}
-        onClose={() => setSelected(null)}
-        seconds={selected ? timeSpent[selected.id] : 0} // 🔹 show time in modal
-      />
     </div>
   );
 }

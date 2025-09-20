@@ -1,8 +1,7 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getCustomerSession, clearCustomerSession } from "./../../lib/clientAuth";
+import { getCustomerSession, clearCustomerSession, authHeaders } from "../../lib/clientAuth";
 
 export default function CustomerTicketPage() {
   const router = useRouter();
@@ -12,65 +11,57 @@ export default function CustomerTicketPage() {
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState("");
   const [lastTicketId, setLastTicketId] = useState("");
+  const [orgOptions, setOrgOptions] = useState([]);
+  const [selectedOrgId, setSelectedOrgId] = useState("");
 
   useEffect(() => {
     const s = getCustomerSession();
-    if (!s) {
-      router.replace("/login");
-      return;
-    }
+    if (!s) { router.replace("/login"); return; }
     setSession(s);
-    if (s.name) setClientName(s.name);
+    if (s.user?.name) setClientName(s.user.name);
   }, [router]);
 
-  if (!session) return null;
+  async function refreshOrgs(pid) {
+    try {
+      const res = await fetch(`/api/organizations/children?parent_id=${pid}`, { headers: authHeaders() });
+      const data = await res.json();
+      const opts = [];
+      if (data?.parent) opts.push({ id: data.parent.id, name: `${data.parent.name} (parent)` });
+      if (Array.isArray(data?.children)) data.children.forEach(c => opts.push({ id: c.id, name: c.name }));
+      setOrgOptions(opts);
+      setSelectedOrgId(String(opts[0]?.id || pid));
+    } catch {
+      setOrgOptions([{ id: pid, name: `${session.orgName} (parent)` }]);
+      setSelectedOrgId(String(pid));
+    }
+  }
+
+  useEffect(() => { if (session?.orgId) refreshOrgs(session.orgId); }, [session]);
 
   async function submitTicket(e) {
-    e.preventDefault();
-    setMsg("");
-    setLastTicketId("");
-
-    if (!clientName.trim() || !desc.trim()) {
-      setMsg("Please fill your name and ticket description.");
-      return;
-    }
-
+    e.preventDefault(); setMsg(""); setLastTicketId("");
+    if (!clientName.trim() || !desc.trim() || !selectedOrgId) { setMsg("Fill your name, description, and org."); return; }
     setSubmitting(true);
     try {
-      const body = {
-        client_name: clientName.trim(),
-        description: desc.trim(),
-        organization_id: Number(session.orgId),
-        // ticket_type: EXTERNAL is forced server-side
-      };
+      const body = { client_name: clientName.trim(), description: desc.trim(), organization_id: Number(selectedOrgId) };
       const res = await fetch("/api/tickets/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setMsg(data?.error || "Failed to submit ticket.");
-      } else {
-        setDesc("");
-        setLastTicketId(data.ticket_id || data.ticket?.ticket_id);
-        setMsg("✅ Ticket submitted! Our team will get back to you shortly.");
-      }
+      if (!res.ok) { setMsg(data?.error || "Failed to submit ticket"); }
+      else { setDesc(""); setLastTicketId(data.ticket_id); setMsg("✅ Ticket submitted!"); }
     } catch {
       setMsg("Network error. Try again.");
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   }
 
-  function logout() {
-    clearCustomerSession();
-    router.replace("/login");
-  }
+  function logout() { clearCustomerSession(); router.replace("/login"); }
+  if (!session) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top bar */}
       <div className="sticky top-0 z-10 bg-white border-b">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
@@ -78,6 +69,7 @@ export default function CustomerTicketPage() {
             <div className="font-semibold">{session.orgName}</div>
           </div>
           <div className="flex items-center gap-2">
+<<<<<<< Updated upstream
             <button
               onClick={() => router.push("/customer/my-tickets")}
               className="text-sm bg-gray-900 !text-white rounded-lg px-3 py-1.5"
@@ -90,12 +82,16 @@ export default function CustomerTicketPage() {
             >
               Log out
             </button>
+=======
+            <a href="/customer/my-tickets" className="text-sm bg-gray-900 text-white rounded-lg px-3 py-1.5">My tickets</a>
+            <button onClick={logout} className="text-sm text-gray-700 border rounded-lg px-3 py-1.5">Log out</button>
+>>>>>>> Stashed changes
           </div>
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-3xl mx-auto px-4 py-6">
+<<<<<<< Updated upstream
         <div className="bg-white border rounded-2xl shadow-sm p-5 sm:p-6">
           <div className="mb-4">
             <h1 className="text-lg font-semibold">Submit a Support Ticket</h1>
@@ -105,18 +101,19 @@ export default function CustomerTicketPage() {
             </p>
           </div>
 
+=======
+        <div className="bg-white border rounded-2xl shadow-sm p-5">
+          <h1 className="text-lg font-semibold mb-2">Submit a Support Ticket</h1>
+>>>>>>> Stashed changes
           <form onSubmit={submitTicket} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Your name</label>
-              <input
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-200"
-                placeholder="John Doe"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-              />
+              <label className="block text-sm font-medium mb-1">Organization</label>
+              <select className="w-full border rounded-lg px-3 py-2 text-sm" value={selectedOrgId} onChange={e=>setSelectedOrgId(e.target.value)}>
+                {orgOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+              </select>
             </div>
-
             <div>
+<<<<<<< Updated upstream
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium mb-1">Describe the issue</label>
                 <span className="text-[11px] !text-gray-500">
@@ -132,22 +129,38 @@ export default function CustomerTicketPage() {
             </div>
 
             {msg && <p className="text-sm !text-gray-700">{msg}</p>}
+=======
+              <label className="block text-sm font-medium mb-1">Your name</label>
+              <input className="w-full border rounded-lg px-3 py-2 text-sm" value={clientName} onChange={e=>setClientName(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Describe the issue</label>
+              <textarea className="w-full border rounded-lg px-3 py-2 text-sm min-h-[140px]" value={desc} onChange={e=>setDesc(e.target.value)} />
+            </div>
+            {msg && <p className="text-sm">{msg}</p>}
+>>>>>>> Stashed changes
             {lastTicketId && (
               <div className="mt-2 rounded-lg bg-green-50 border border-green-200 p-3 text-sm">
                 <div className="font-medium">Your ticket ID:</div>
                 <div className="font-mono">{lastTicketId}</div>
+<<<<<<< Updated upstream
                 <div className="mt-1 !text-gray-600">
                   Our team will contact you shortly. You can track it under <strong>My tickets</strong>.
                 </div>
+=======
+>>>>>>> Stashed changes
               </div>
             )}
-
             <div className="pt-2">
+<<<<<<< Updated upstream
               <button
                 type="submit"
                 disabled={submitting}
                 className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 !text-white text-sm font-medium rounded-lg px-4 py-2.5 disabled:opacity-60"
               >
+=======
+              <button type="submit" disabled={submitting} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-4 py-2.5 disabled:opacity-60">
+>>>>>>> Stashed changes
                 {submitting ? "Submitting..." : "Submit ticket"}
               </button>
             </div>

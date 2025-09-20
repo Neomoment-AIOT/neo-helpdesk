@@ -1,46 +1,37 @@
 // app/api/tickets/create/route.js
-import prisma from '../../../lib/prisma'; // ← relative path; adjust if your prisma file is elsewhere
+import { NextResponse } from "next/server";
+import { prisma } from "@/app/lib/db";                  // ✅ use the shared client
+import { requireAuth, allowedOrgIdsFor } from "@/app/lib/auth";
 
 export async function POST(req) {
   try {
-    const { client_name, description, organization_id } = await req.json();
+    const { user, session, error, status } = await requireAuth(req);
+    if (error) return NextResponse.json({ error }, { status });
 
-    // Basic validation
+    const { client_name, description, organization_id } = await req.json();
     if (!client_name?.trim() || !description?.trim() || !organization_id) {
-      return new Response(
-        JSON.stringify({ error: 'client_name, description and organization_id are required' }),
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "client_name, description, organization_id required" }, { status: 400 });
     }
 
-    // DO NOT pass ticket_id — Postgres will generate it.
-    const created = await prisma.ticket.create({
+    const allowed = await allowedOrgIdsFor(session);
+    if (!allowed.includes(Number(organization_id))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const t = await prisma.tickets.create({
       data: {
         client_name: client_name.trim(),
         description: description.trim(),
-        organization: { connect: { id: Number(organization_id) } },
-        ticket_type: 'EXTERNAL',     // force external for customer flow
-        status: 'NOT_STARTED',
+        organization_id: Number(organization_id),
+        ticket_type: "EXTERNAL",                // enum value as string is fine
+        created_by_user_id: user.id,
       },
-      select: {
-        id: true,
-        ticket_id: true,             // returned from DB default
-        client_name: true,
-        description: true,
-        ticket_type: true,
-        status: true,
-        created_at: true,
-        organization: { select: { id: true, name: true } },
-      },
+      include: { organizations: true },
     });
 
-    // Send the generated ticket_id back so you can show it immediately
-    return new Response(
-      JSON.stringify({ ticket: created, ticket_id: created.ticket_id }),
-      { status: 201 }
-    );
+    return NextResponse.json({ ticket_id: t.ticket_id, ticket: t });
   } catch (e) {
-    console.error('create ticket error', e);
-    return new Response(JSON.stringify({ error: 'Failed to create ticket' }), { status: 500 });
+    console.error(e);
+    return NextResponse.json({ error: "Failed to create ticket" }, { status: 500 });
   }
 }
