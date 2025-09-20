@@ -54,8 +54,8 @@ function Chip({ children, className }) {
 function KeyValue({ label, value }) {
   return (
     <div className="text-xs">
-      <div className="text-gray-500">{label}</div>
-      <div className="font-medium text-gray-900">{value ?? "—"}</div>
+      <div className="!text-gray-500">{label}</div>
+      <div className="font-medium !text-gray-900">{value ?? "—"}</div>
     </div>
   );
 }
@@ -264,7 +264,7 @@ export default function DashboardPage() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
               <div className="flex items-center gap-3">
                 <h2 className="text-xl font-semibold tracking-tight">Tickets</h2>
-                <span className="text-sm text-gray-500">({headerCount})</span>
+                <span className="text-sm !text-gray-500">({headerCount})</span>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
@@ -302,7 +302,7 @@ export default function DashboardPage() {
 
                 <button
                   onClick={() => setShowNewModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm ml-auto transition"
+                  className="bg-blue-600 hover:bg-blue-700 !text-white px-3 py-2 rounded-lg text-sm ml-auto transition"
                 >
                   + Ticket
                 </button>
@@ -323,8 +323,8 @@ export default function DashboardPage() {
                       {/* ID + created */}
                       <div className="md:col-span-2">
                         <div className="flex items-center justify-between md:block">
-                          <span className="font-mono text-xs md:text-[13px] text-gray-700">{t.ticket_id}</span>
-                          <span className="ml-2 md:ml-0 block text-[11px] text-gray-500">
+                          <span className="font-mono text-xs md:text-[13px] !text-gray-700">{t.ticket_id}</span>
+                          <span className="ml-2 md:ml-0 block text-[11px] !text-gray-500">
                             {t.created_at ? new Date(t.created_at).toLocaleString() : ""}
                           </span>
                         </div>
@@ -334,19 +334,19 @@ export default function DashboardPage() {
                       <div className="md:col-span-6">
                         <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
                           {t.organization?.name && (
-                            <Chip className="bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200">
+                            <Chip className="bg-sky-50 !text-sky-700 ring-1 ring-inset ring-sky-200">
                               {t.organization.name}
                             </Chip>
                           )}
                           <Chip className={typeStyles(t.ticket_type)}>{t.ticket_type}</Chip>
                           <Chip className={statusStyles(t.status)}>{STATUS_LABEL[t.status] ?? t.status}</Chip>
-                          <Chip className="bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200">
+                          <Chip className="bg-violet-50 !text-violet-700 ring-1 ring-inset ring-violet-200">
                             ⏱ {totalDisplay}
                           </Chip>
                         </div>
 
-                        <div className="font-semibold text-gray-900 truncate">{t.client_name}</div>
-                        <div className="mt-1 text-sm text-gray-700 break-words line-clamp-2">
+                        <div className="font-semibold !text-gray-900 truncate">{t.client_name}</div>
+                        <div className="mt-1 text-sm !text-gray-700 break-words line-clamp-2">
                           {t.description}
                         </div>
 
@@ -372,7 +372,7 @@ export default function DashboardPage() {
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setActiveTicket(t); }}
                             className="w-full md:w-auto text-sm px-3 py-1.5 rounded-lg border bg-white hover:bg-blue-50
-                   text-blue-700 border-blue-200 transition whitespace-nowrap"
+                   !text-blue-700 border-blue-200 transition whitespace-nowrap"
                           >
                             {t.assignee?.name ? "Reassign" : "Assign"}
                           </button>
@@ -386,7 +386,7 @@ export default function DashboardPage() {
 
               <div ref={bottomRef} className="h-6" />
               {!tickets.length && (
-                <p className="text-gray-500 mt-6 text-center text-sm">No tickets found</p>
+                <p className="!text-gray-500 mt-6 text-center text-sm">No tickets found</p>
               )}
             </div>
           </div>
@@ -399,7 +399,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-2xl border shadow-xl w-full max-w-lg">
             <div className="px-5 py-4 border-b">
               <h3 className="font-semibold">Assign {activeTicket.ticket_id}</h3>
-              <p className="text-sm text-gray-600 mt-1 line-clamp-2">{activeTicket.description}</p>
+              <p className="text-sm !text-gray-600 mt-1 line-clamp-2">{activeTicket.description}</p>
             </div>
 
             <div className="px-5 py-4 space-y-2 max-h-80 overflow-y-auto">
@@ -407,14 +407,14 @@ export default function DashboardPage() {
                 <div key={m.id} className="flex items-center justify-between border rounded-lg p-2">
                   <div>
                     <div className="font-medium">{m.name}</div>
-                    <div className="text-xs text-gray-500">{m.email}</div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs !text-gray-500">{m.email}</div>
+                    <div className="text-xs !text-gray-400">
                       {m.role} • {Array.isArray(m.teams) && m.teams.length ? m.teams.map(t => t.name).join(", ") : "—"}
                     </div>
                   </div>
                   <button
                     onClick={() => assignToMember(m.id)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm transition"
+                    className="bg-blue-600 hover:bg-blue-700 !text-white px-3 py-1.5 rounded-lg text-sm transition"
                   >
                     Assign
                   </button>
@@ -463,7 +463,7 @@ export default function DashboardPage() {
                   <option value="INTERNAL">Internal</option>
                   <option value="EXTERNAL" disabled>External (use customer portal)</option>
                 </select>
-                <p className="text-xs text-gray-500 mt-1">This endpoint creates INTERNAL tickets.</p>
+                <p className="text-xs !text-gray-500 mt-1">This endpoint creates INTERNAL tickets.</p>
               </div>
 
               <div>
@@ -496,7 +496,7 @@ export default function DashboardPage() {
               <button
                 onClick={createTicket}
                 disabled={creating}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm disabled:opacity-50 transition"
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 !text-white rounded-lg text-sm disabled:opacity-50 transition"
               >
                 {creating ? "Creating..." : "Create"}
               </button>
@@ -534,10 +534,10 @@ export default function DashboardPage() {
           <div className="sticky top-0 bg-white/90 backdrop-blur border-b px-5 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex flex-col">
-                <span className="text-xs text-gray-500">Ticket</span>
+                <span className="text-xs !text-gray-500">Ticket</span>
                 <span className="font-semibold">{ticket.ticket_id}</span>
               </div>
-              <span className="inline-flex items-center rounded-full border bg-violet-50 text-violet-700 ring-1 ring-violet-200 px-2 py-0.5 text-[11px]">
+              <span className="inline-flex items-center rounded-full border bg-violet-50 !text-violet-700 ring-1 ring-violet-200 px-2 py-0.5 text-[11px]">
                 ⏱ {formatDuration(totalSeconds || 0)}
               </span>
             </div>
@@ -551,33 +551,33 @@ export default function DashboardPage() {
             <div className="flex flex-wrap gap-2">
               <Chip className={statusStyles(ticket.status)}>{ticket.status}</Chip>
               <Chip className={ticket.ticket_type === "EXTERNAL"
-                ? "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200"
-                : "bg-slate-50 text-slate-700 ring-1 ring-slate-200"}>
+                ? "bg-indigo-50 !text-indigo-700 ring-1 ring-indigo-200"
+                : "bg-slate-50 !text-slate-700 ring-1 ring-slate-200"}>
                 {ticket.ticket_type}
               </Chip>
-              {ticket.organization?.name && <Chip className="bg-sky-50 text-sky-700 ring-1 ring-sky-200">Org: {ticket.organization.name}</Chip>}
-              {ticket.team?.name && <Chip className="bg-teal-50 text-teal-700 ring-1 ring-teal-200">Team: {ticket.team.name}</Chip>}
-              {ticket.assignee?.name && <Chip className="bg-amber-50 text-amber-700 ring-1 ring-amber-200">Assignee: {ticket.assignee.name}</Chip>}
+              {ticket.organization?.name && <Chip className="bg-sky-50 !text-sky-700 ring-1 ring-sky-200">Org: {ticket.organization.name}</Chip>}
+              {ticket.team?.name && <Chip className="bg-teal-50 !text-teal-700 ring-1 ring-teal-200">Team: {ticket.team.name}</Chip>}
+              {ticket.assignee?.name && <Chip className="bg-amber-50 !text-amber-700 ring-1 ring-amber-200">Assignee: {ticket.assignee.name}</Chip>}
             </div>
 
             <div>
-              <div className="text-xs text-gray-500">Client name</div>
+              <div className="text-xs !text-gray-500">Client name</div>
               <div className="text-sm font-medium">{ticket.client_name}</div>
             </div>
 
             <div>
-              <div className="text-xs text-gray-500 mb-1">Description</div>
+              <div className="text-xs !text-gray-500 mb-1">Description</div>
               {/* Long text: scroll inside a soft container */}
-              <div className="bg-gray-50 rounded-lg border p-3 text-sm text-gray-800 whitespace-pre-wrap max-h-60 overflow-y-auto">
+              <div className="bg-gray-50 rounded-lg border p-3 text-sm !text-gray-800 whitespace-pre-wrap max-h-60 overflow-y-auto">
                 {ticket.description || "—"}
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <div><div className="text-xs text-gray-500">Created</div><div>{created}</div></div>
-              <div><div className="text-xs text-gray-500">Started</div><div>{started}</div></div>
-              <div><div className="text-xs text-gray-500">Completed</div><div>{completed}</div></div>
-              <div><div className="text-xs text-gray-500">Updated</div><div>{updated}</div></div>
+              <div><div className="text-xs !text-gray-500">Created</div><div>{created}</div></div>
+              <div><div className="text-xs !text-gray-500">Started</div><div>{started}</div></div>
+              <div><div className="text-xs !text-gray-500">Completed</div><div>{completed}</div></div>
+              <div><div className="text-xs !text-gray-500">Updated</div><div>{updated}</div></div>
             </div>
           </div>
         </div>

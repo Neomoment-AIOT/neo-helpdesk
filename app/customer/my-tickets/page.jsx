@@ -45,10 +45,10 @@ function Card({ ticket, onClick, seconds }) {
       className="w-full text-left rounded-lg border bg-white/95 hover:bg-white shadow-sm hover:shadow-md transition active:scale-[0.99] px-3 py-3"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-mono text-gray-500">{ticket.ticket_id}</span>
+        <span className="text-[11px] font-mono !text-gray-500">{ticket.ticket_id}</span>
 
         {/* Time spent chip */}
-        <span className="inline-flex items-center rounded-full border bg-violet-50 text-violet-700 ring-1 ring-violet-200 px-2 py-0.5 text-[10px]">
+        <span className="inline-flex items-center rounded-full border bg-violet-50 !text-violet-700 ring-1 ring-violet-200 px-2 py-0.5 text-[10px]">
           ⏱ {formatDuration(seconds || 0)}
         </span>
       </div>
@@ -56,21 +56,21 @@ function Card({ ticket, onClick, seconds }) {
       {/* org badge if present */}
       {ticket.organization?.name && (
         <div className="mt-1">
-          <span className="inline-flex items-center rounded-full border bg-sky-50 text-sky-700 ring-1 ring-sky-200 px-2 py-0.5 text-[10px]">
+          <span className="inline-flex items-center rounded-full border bg-sky-50 !text-sky-700 ring-1 ring-sky-200 px-2 py-0.5 text-[10px]">
             {ticket.organization.name}
           </span>
         </div>
       )}
 
-      <div className="mt-2 text-sm font-medium leading-5 text-gray-900 line-clamp-2">
+      <div className="mt-2 text-sm font-medium leading-5 !text-gray-900 line-clamp-2">
         {ticket.client_name}
       </div>
 
-      <div className="mt-1 text-[12px] text-gray-600 leading-5 line-clamp-3">
+      <div className="mt-1 text-[12px] !text-gray-600 leading-5 line-clamp-3">
         {ticket.description}
       </div>
 
-      <div className="mt-2 text-[11px] text-gray-500">
+      <div className="mt-2 text-[11px] !text-gray-500">
         {ticket.created_at ? new Date(ticket.created_at).toLocaleString() : ""}
       </div>
     </button>
@@ -88,7 +88,7 @@ function ColumnHeader({ status, title, count }) {
           <div className={`h-2 w-2 rounded-full ${ACCENTS[status]}`} />
           <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
         </div>
-        <span className="inline-flex items-center justify-center min-w-[26px] h-6 px-2 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-700 border">
+        <span className="inline-flex items-center justify-center min-w-[26px] h-6 px-2 rounded-full text-[11px] font-semibold bg-gray-100 !text-gray-700 border">
           {count}
         </span>
       </div>
@@ -107,7 +107,7 @@ function Column({ status, title, tickets, onCardClick, timeSpentMap }) {
             <Card key={t.id} ticket={t} onClick={() => onCardClick(t)} seconds={timeSpentMap[t.id]} />
           ))}
           {!tickets.length && (
-            <div className="text-xs text-gray-400 text-center py-6 select-none">No tickets</div>
+            <div className="text-xs !text-gray-400 text-center py-6 select-none">No tickets</div>
           )}
         </div>
       </div>
@@ -131,11 +131,11 @@ function TicketModal({ ticket, onClose, seconds }) {
         <div className="sticky top-0 bg-white/90 backdrop-blur border-b px-5 py-3 flex items-center justify-between rounded-t-2xl">
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
-              <span className="text-xs text-gray-500">Ticket</span>
+              <span className="text-xs !text-gray-500">Ticket</span>
               <span className="font-semibold">{ticket.ticket_id}</span>
             </div>
             {/* Time spent chip */}
-            <span className="inline-flex items-center rounded-full border bg-violet-50 text-violet-700 ring-1 ring-violet-200 px-2 py-0.5 text-[11px]">
+            <span className="inline-flex items-center rounded-full border bg-violet-50 !text-violet-700 ring-1 ring-violet-200 px-2 py-0.5 text-[11px]">
               ⏱ {formatDuration(seconds || 0)}
             </span>
           </div>
@@ -158,41 +158,41 @@ function TicketModal({ ticket, onClose, seconds }) {
           </div>
 
           <div>
-            <div className="text-xs text-gray-500">Client name</div>
+            <div className="text-xs !text-gray-500">Client name</div>
             <div className="text-sm font-medium">{ticket.client_name}</div>
           </div>
 
           <div>
-            <div className="text-xs text-gray-500 mb-1">Description</div>
-            <p className="text-sm text-gray-800 whitespace-pre-wrap">{ticket.description}</p>
+            <div className="text-xs !text-gray-500 mb-1">Description</div>
+            <p className="text-sm !text-gray-800 whitespace-pre-wrap">{ticket.description}</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div>
-              <div className="text-xs text-gray-500">Created</div>
+              <div className="text-xs !text-gray-500">Created</div>
               <div>{ticket.created_at ? new Date(ticket.created_at).toLocaleString() : "—"}</div>
             </div>
             <div>
-              <div className="text-xs text-gray-500">Started</div>
+              <div className="text-xs !text-gray-500">Started</div>
               <div>{ticket.started_at ? new Date(ticket.started_at).toLocaleString() : "—"}</div>
             </div>
             <div>
-              <div className="text-xs text-gray-500">Completed</div>
+              <div className="text-xs !text-gray-500">Completed</div>
               <div>{ticket.completed_at ? new Date(ticket.completed_at).toLocaleString() : "—"}</div>
             </div>
             <div>
-              <div className="text-xs text-gray-500">Updated</div>
+              <div className="text-xs !text-gray-500">Updated</div>
               <div>{ticket.updated_at ? new Date(ticket.updated_at).toLocaleString() : "—"}</div>
             </div>
           </div>
 
           {Array.isArray(ticket.histories) && ticket.histories.length > 0 && (
             <div>
-              <div className="text-xs text-gray-500 mb-2">History</div>
+              <div className="text-xs !text-gray-500 mb-2">History</div>
               <ul className="space-y-2">
                 {ticket.histories.map((h) => (
                   <li key={h.id} className="border rounded p-2">
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs !text-gray-500">
                       {h.created_at ? new Date(h.created_at).toLocaleString() : ""}
                     </div>
                     <div className="text-sm">
@@ -276,7 +276,7 @@ export default function MyTicketsPage() {
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
-            <div className="text-xs text-gray-500">Organization</div>
+            <div className="text-xs !text-gray-500">Organization</div>
             <div className="font-semibold">{session.orgName}</div>
           </div>
           <div className="flex items-center gap-2">
@@ -288,7 +288,7 @@ export default function MyTicketsPage() {
             </button>
             <button
               onClick={() => { clearCustomerSession(); router.replace("/login"); }}
-              className="text-sm text-gray-700 hover:text-gray-900 border rounded-lg px-3 py-1.5"
+              className="text-sm !text-gray-700 hover:text-gray-900 border rounded-lg px-3 py-1.5"
             >
               Log out
             </button>
@@ -301,7 +301,7 @@ export default function MyTicketsPage() {
         <h1 className="text-lg font-semibold mb-3">My tickets</h1>
 
         {loading ? (
-          <div className="text-sm text-gray-500">Loading…</div>
+          <div className="text-sm !text-gray-500">Loading…</div>
         ) : (
           <div className="flex gap-3 overflow-x-auto pb-3 flex-1 min-h-0">
             {STATUS_ORDER.map((s) => (

@@ -44,7 +44,7 @@ export default function InternalLogin() {
       <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-6">
         <div className="mb-6">
           <h1 className="text-xl font-semibold">Team Login</h1>
-          <p className="text-sm text-gray-500">Sign in to manage tickets.</p>
+          <p className="text-sm !text-gray-500">Sign in to manage tickets.</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -67,12 +67,12 @@ export default function InternalLogin() {
             />
           </div>
 
-          {err && <p className="text-sm text-red-600">{err}</p>}
+          {err && <p className="text-sm !text-red-600">{err}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg py-2.5 disabled:opacity-60"
+            className="w-full bg-blue-600 hover:bg-blue-700 !text-white text-sm font-medium rounded-lg py-2.5 disabled:opacity-60"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
@@ -80,7 +80,7 @@ export default function InternalLogin() {
 
         <div className="mt-4 text-center text-sm">
           New teammate?{" "}
-          <a href="/signupmembers" className="text-blue-600 hover:underline">Create an account</a>
+          <a href="/signupmembers" className="!text-blue-600 hover:underline">Create an account</a>
         </div>
       </div>
     </div>

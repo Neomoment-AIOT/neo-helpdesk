@@ -53,7 +53,7 @@ export default function InternalSignup() {
       <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-6">
         <div className="mb-6">
           <h1 className="text-xl font-semibold">Create teammate account</h1>
-          <p className="text-sm text-gray-500">Sign up to manage and assign tickets.</p>
+          <p className="text-sm !text-gray-500">Sign up to manage and assign tickets.</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -84,17 +84,17 @@ export default function InternalSignup() {
                    value={teamId} onChange={(e) => setTeamId(e.target.value)} />
           </div>
 
-          {err && <p className="text-sm text-red-600">{err}</p>}
+          {err && <p className="text-sm !text-red-600">{err}</p>}
 
           <button type="submit" disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg py-2.5 disabled:opacity-60">
+            className="w-full bg-blue-600 hover:bg-blue-700 !text-white text-sm font-medium rounded-lg py-2.5 disabled:opacity-60">
             {loading ? "Creating..." : "Create account"}
           </button>
         </form>
 
         <div className="mt-4 text-center text-sm">
           Already have an account?{" "}
-          <a href="/internal/login" className="text-blue-600 hover:underline">Sign in</a>
+          <a href="/internal/login" className="!text-blue-600 hover:underline">Sign in</a>
         </div>
       </div>
     </div>

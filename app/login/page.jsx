@@ -51,7 +51,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-6">
         <div className="mb-6">
           <h1 className="text-xl font-semibold">Welcome back</h1>
-          <p className="text-sm text-gray-500">Log in to submit and track your tickets.</p>
+          <p className="text-sm !text-gray-500">Log in to submit and track your tickets.</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
@@ -76,12 +76,12 @@ export default function LoginPage() {
             />
           </div>
 
-          {err && <p className="text-sm text-red-600">{err}</p>}
+          {err && <p className="text-sm !text-red-600">{err}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg py-2.5 disabled:opacity-60"
+            className="w-full bg-blue-600 hover:bg-blue-700 !text-white text-sm font-medium rounded-lg py-2.5 disabled:opacity-60"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
@@ -91,7 +91,7 @@ export default function LoginPage() {
           New here?{" "}
           <button
             onClick={() => router.push("/")}
-            className="text-blue-600 hover:underline"
+            className="!text-blue-600 hover:underline"
           >
             Create an account
           </button>

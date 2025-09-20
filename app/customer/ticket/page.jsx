@@ -74,19 +74,19 @@ export default function CustomerTicketPage() {
       <div className="sticky top-0 z-10 bg-white border-b">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
-            <div className="text-xs text-gray-500">Organization</div>
+            <div className="text-xs !text-gray-500">Organization</div>
             <div className="font-semibold">{session.orgName}</div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push("/customer/my-tickets")}
-              className="text-sm bg-gray-900 text-white rounded-lg px-3 py-1.5"
+              className="text-sm bg-gray-900 !text-white rounded-lg px-3 py-1.5"
             >
               My tickets
             </button>
             <button
               onClick={logout}
-              className="text-sm text-gray-700 hover:text-gray-900 border rounded-lg px-3 py-1.5"
+              className="text-sm !text-gray-700 hover:!text-gray-900 border rounded-lg px-3 py-1.5"
             >
               Log out
             </button>
@@ -99,7 +99,7 @@ export default function CustomerTicketPage() {
         <div className="bg-white border rounded-2xl shadow-sm p-5 sm:p-6">
           <div className="mb-4">
             <h1 className="text-lg font-semibold">Submit a Support Ticket</h1>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm !text-gray-500">
               Please provide as much detail as possible — steps to reproduce, expected/actual behavior,
               screenshots/links, and any error messages. Detailed reports help us resolve your issue faster.
             </p>
@@ -119,7 +119,7 @@ export default function CustomerTicketPage() {
             <div>
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium mb-1">Describe the issue</label>
-                <span className="text-[11px] text-gray-500">
+                <span className="text-[11px] !text-gray-500">
                   Tip: Include steps to reproduce & screenshots/links if possible.
                 </span>
               </div>
@@ -131,12 +131,12 @@ export default function CustomerTicketPage() {
               />
             </div>
 
-            {msg && <p className="text-sm text-gray-700">{msg}</p>}
+            {msg && <p className="text-sm !text-gray-700">{msg}</p>}
             {lastTicketId && (
               <div className="mt-2 rounded-lg bg-green-50 border border-green-200 p-3 text-sm">
                 <div className="font-medium">Your ticket ID:</div>
                 <div className="font-mono">{lastTicketId}</div>
-                <div className="mt-1 text-gray-600">
+                <div className="mt-1 !text-gray-600">
                   Our team will contact you shortly. You can track it under <strong>My tickets</strong>.
                 </div>
               </div>
@@ -146,7 +146,7 @@ export default function CustomerTicketPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-4 py-2.5 disabled:opacity-60"
+                className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 !text-white text-sm font-medium rounded-lg px-4 py-2.5 disabled:opacity-60"
               >
                 {submitting ? "Submitting..." : "Submit ticket"}
               </button>

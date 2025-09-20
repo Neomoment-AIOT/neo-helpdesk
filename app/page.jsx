@@ -52,7 +52,7 @@ export default function SignupPage() {
       <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-6">
         <div className="mb-6">
           <h1 className="text-xl font-semibold">Create your account</h1>
-          <p className="text-sm text-gray-500">Register your organization and start submitting tickets.</p>
+          <p className="text-sm !text-gray-500">Register your organization and start submitting tickets.</p>
         </div>
 
         <form onSubmit={handleSignup} className="space-y-4">
@@ -100,12 +100,12 @@ export default function SignupPage() {
             />
           </div>
 
-          {err && <p className="text-sm text-red-600">{err}</p>}
+          {err && <p className="text-sm !text-red-600">{err}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg py-2.5 disabled:opacity-60"
+            className="w-full bg-blue-600 hover:bg-blue-700 !text-white text-sm font-medium rounded-lg py-2.5 disabled:opacity-60"
           >
             {loading ? "Creating..." : "Create account"}
           </button>
@@ -115,7 +115,7 @@ export default function SignupPage() {
           Already have an account?{" "}
           <button
             onClick={() => router.push("/login")}
-            className="text-blue-600 hover:underline"
+            className="!text-blue-600 hover:underline"
           >
             Log in
           </button>
