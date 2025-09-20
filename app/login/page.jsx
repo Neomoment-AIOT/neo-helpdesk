@@ -47,8 +47,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4">
-      <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gray-200 px-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6">
         <div className="mb-6">
           <h1 className="text-xl font-semibold">Welcome back</h1>
           <p className="text-sm text-gray-500">Log in to submit and track your tickets.</p>
@@ -58,7 +58,7 @@ export default function LoginPage() {
           <div>
             <label className="block text-sm font-medium mb-1">Organization name</label>
             <input
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-lg px-3 py-2.5 text-sm bg-gray-100 outline-none focus:ring-2 focus:ring-blue-200"
               placeholder="Organization name"
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
@@ -69,7 +69,7 @@ export default function LoginPage() {
             <label className="block text-sm font-medium mb-1">Password</label>
             <input
               type="password"
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-lg px-3 py-2.5 text-sm bg-gray-100 outline-none focus:ring-2 focus:ring-blue-200"
               placeholder="••••••••"
               value={pass}
               onChange={(e) => setPass(e.target.value)}
@@ -81,17 +81,17 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg py-2.5 disabled:opacity-60"
+            className="w-full bg-black hover:bg-gray-900 text-white text-base font-medium rounded-lg py-2.5 disabled:opacity-60"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
-        <div className="mt-4 text-center text-sm">
+        <div className="mt-4 text-center text-base">
           New here?{" "}
           <button
             onClick={() => router.push("/")}
-            className="text-blue-600 hover:underline"
+            className="text-black hover:underline font-bold"
           >
             Create an account
           </button>

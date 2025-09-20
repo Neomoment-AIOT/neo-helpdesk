@@ -271,7 +271,7 @@ export default function MyTicketsPage() {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-gray-200">
       {/* Top bar */}
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -282,13 +282,13 @@ export default function MyTicketsPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push("/customer/ticket")}
-              className="text-sm border rounded-lg px-3 py-1.5 hover:bg-gray-50"
+              className="text-sm border rounded-lg px-3 py-1.5 text-white bg-black hover:bg-gray-900"
             >
               Create ticket
             </button>
             <button
               onClick={() => { clearCustomerSession(); router.replace("/login"); }}
-              className="text-sm text-gray-700 hover:text-gray-900 border rounded-lg px-3 py-1.5"
+              className="text-sm text-white bg-black hover:bg-gray-900 border rounded-lg px-3 py-1.5"
             >
               Log out
             </button>

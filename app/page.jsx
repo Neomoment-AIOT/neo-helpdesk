@@ -48,18 +48,22 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4">
-      <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gray-200 px-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6">
         <div className="mb-6">
           <h1 className="text-xl font-semibold">Create your account</h1>
-          <p className="text-sm text-gray-500">Register your organization and start submitting tickets.</p>
+          <p className="text-sm text-gray-500">
+            Register your organization and start submitting tickets.
+          </p>
         </div>
 
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Organization name</label>
+            <label className="block text-sm font-medium mb-1">
+              Organization name
+            </label>
             <input
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-lg px-3 py-2.5 text-sm bg-gray-100 outline-none focus:ring-2 focus:ring-blue-200"
               placeholder="e.g., Acme Corp"
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
@@ -70,7 +74,7 @@ export default function SignupPage() {
             <div>
               <label className="block text-sm font-medium mb-1">Your name</label>
               <input
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+                className="w-full rounded-lg px-3 py-2.5 text-sm bg-gray-100 outline-none focus:ring-2 focus:ring-blue-200"
                 placeholder="John Doe"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -81,7 +85,7 @@ export default function SignupPage() {
               <label className="block text-sm font-medium mb-1">Email</label>
               <input
                 type="email"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+                className="w-full rounded-lg px-3 py-2.5 text-sm bg-gray-100 outline-none focus:ring-2 focus:ring-blue-200"
                 placeholder="you@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -93,7 +97,7 @@ export default function SignupPage() {
             <label className="block text-sm font-medium mb-1">Password</label>
             <input
               type="password"
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-lg px-3 py-2.5 text-sm bg-gray-100 outline-none focus:ring-2 focus:ring-blue-200"
               placeholder="••••••••"
               value={pass}
               onChange={(e) => setPass(e.target.value)}
@@ -105,17 +109,17 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg py-2.5 disabled:opacity-60"
+            className="w-full bg-black hover:bg-gray-800 text-white text-base font-medium rounded-lg py-2.5 disabled:opacity-60"
           >
             {loading ? "Creating..." : "Create account"}
           </button>
         </form>
 
-        <div className="mt-4 text-center text-sm">
+        <div className="mt-4 text-center text-base">
           Already have an account?{" "}
           <button
             onClick={() => router.push("/login")}
-            className="text-blue-600 hover:underline"
+            className="text-black hover:underline font-bold"
           >
             Log in
           </button>

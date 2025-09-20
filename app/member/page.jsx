@@ -40,7 +40,7 @@ export default function InternalLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-200">
       <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-6">
         <div className="mb-6">
           <h1 className="text-xl font-semibold">Team Login</h1>
@@ -72,15 +72,15 @@ export default function InternalLogin() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg py-2.5 disabled:opacity-60"
+            className="w-full bg-black hover:bg-gray-900 text-white text-sm font-medium rounded-lg py-2.5 disabled:opacity-60"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
-        <div className="mt-4 text-center text-sm">
+        <div className="mt-4 text-center text-base">
           New teammate?{" "}
-          <a href="/signupmembers" className="text-blue-600 hover:underline">Create an account</a>
+          <a href="/signupmembers" className="text-black font-bold hover:underline">Create an account</a>
         </div>
       </div>
     </div>

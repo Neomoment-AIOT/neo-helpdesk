@@ -45,7 +45,7 @@ function typeStyles(type) {
 
 function Chip({ children, className }) {
   return (
-    <span className={classNames("inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium", className)}>
+    <span className={classNames("inline-flex items-center rounded-full px-2 py-0.5 text-sm font-medium", className)}>
       {children}
     </span>
   );
@@ -53,7 +53,7 @@ function Chip({ children, className }) {
 
 function KeyValue({ label, value }) {
   return (
-    <div className="text-xs">
+    <div className="text-base">
       <div className="text-gray-500">{label}</div>
       <div className="font-medium text-gray-900">{value ?? "—"}</div>
     </div>
@@ -248,7 +248,7 @@ export default function DashboardPage() {
   const headerCount = useMemo(() => new Intl.NumberFormat().format(total), [total]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-gray-200">
       <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 p-4 h-[88vh] min-h-0">
         {/* Left: Teams/Skills */}
         <section className="lg:col-span-1 h-full min-h-0">
@@ -264,7 +264,7 @@ export default function DashboardPage() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
               <div className="flex items-center gap-3">
                 <h2 className="text-xl font-semibold tracking-tight">Tickets</h2>
-                <span className="text-sm text-gray-500">({headerCount})</span>
+                <span className="text-lg text-gray-500">({headerCount})</span>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">

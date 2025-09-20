@@ -73,7 +73,7 @@ export default function CustomerTicketPage() {
       {/* Top bar */}
       <div className="sticky top-0 z-10 bg-white border-b">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div>
+          <div className="text-lg font-semibold">
             <div className="text-xs text-gray-500">Organization</div>
             <div className="font-semibold">{session.orgName}</div>
           </div>
@@ -95,63 +95,65 @@ export default function CustomerTicketPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-3xl mx-auto px-4 py-6">
-        <div className="bg-white border rounded-2xl shadow-sm p-5 sm:p-6">
-          <div className="mb-4">
-            <h1 className="text-lg font-semibold">Submit a Support Ticket</h1>
-            <p className="text-sm text-gray-500">
-              Please provide as much detail as possible — steps to reproduce, expected/actual behavior,
-              screenshots/links, and any error messages. Detailed reports help us resolve your issue faster.
-            </p>
-          </div>
-
-          <form onSubmit={submitTicket} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Your name</label>
-              <input
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-200"
-                placeholder="John Doe"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-              />
+      <div className="bg-gray-200 min-h-screen">
+        <div className="max-w-3xl mx-auto px-4 py-6">
+          <div className="bg-white border rounded-2xl shadow-sm p-5 sm:p-6">
+            <div className="mb-4">
+              <h1 className="text-lg font-semibold">Submit a Support Ticket</h1>
+              <p className="text-sm text-gray-500">
+                Please provide as much detail as possible — steps to reproduce, expected/actual behavior,
+                screenshots/links, and any error messages. Detailed reports help us resolve your issue faster.
+              </p>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium mb-1">Describe the issue</label>
-                <span className="text-[11px] text-gray-500">
-                  Tip: Include steps to reproduce & screenshots/links if possible.
-                </span>
+            <form onSubmit={submitTicket} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Your name</label>
+                <input
+                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+                  placeholder="John Doe"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                />
               </div>
-              <textarea
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-200 min-h-[140px]"
-                placeholder="What happened? What did you expect? Any errors?"
-                value={desc}
-                onChange={(e) => setDesc(e.target.value)}
-              />
-            </div>
 
-            {msg && <p className="text-sm text-gray-700">{msg}</p>}
-            {lastTicketId && (
-              <div className="mt-2 rounded-lg bg-green-50 border border-green-200 p-3 text-sm">
-                <div className="font-medium">Your ticket ID:</div>
-                <div className="font-mono">{lastTicketId}</div>
-                <div className="mt-1 text-gray-600">
-                  Our team will contact you shortly. You can track it under <strong>My tickets</strong>.
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium mb-1">Describe the issue</label>
+                  <span className="text-[11px] text-gray-500">
+                    Tip: Include steps to reproduce & screenshots/links if possible.
+                  </span>
                 </div>
+                <textarea
+                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-200 min-h-[140px]"
+                  placeholder="What happened? What did you expect? Any errors?"
+                  value={desc}
+                  onChange={(e) => setDesc(e.target.value)}
+                />
               </div>
-            )}
 
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-4 py-2.5 disabled:opacity-60"
-              >
-                {submitting ? "Submitting..." : "Submit ticket"}
-              </button>
-            </div>
-          </form>
+              {msg && <p className="text-sm text-gray-700">{msg}</p>}
+              {lastTicketId && (
+                <div className="mt-2 rounded-lg bg-green-50 border border-green-200 p-3 text-sm">
+                  <div className="font-medium">Your ticket ID:</div>
+                  <div className="font-mono">{lastTicketId}</div>
+                  <div className="mt-1 text-gray-600">
+                    Our team will contact you shortly. You can track it under <strong>My tickets</strong>.
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="inline-flex items-center justify-center bg-black hover:bg-gray-900 text-white text-sm font-medium rounded-lg px-4 py-2.5 disabled:opacity-60"
+                >
+                  {submitting ? "Submitting..." : "Submit ticket"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
