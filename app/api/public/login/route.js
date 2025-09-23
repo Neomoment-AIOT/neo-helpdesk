@@ -15,15 +15,28 @@ export async function POST(req) {
     const user = await prisma.users.findUnique({
       where: { email: emailLower },
       include: {
-        org_users: {
-          include: { organizations: true },
-        },
+        org_users: { include: { organizations: true } },
       },
     });
     if (!user) return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
 
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+
+    // if multiple memberships and no orgId -> require explicit selection
+    if (!orgId && user.org_users.length > 1) {
+      return NextResponse.json(
+        {
+          error: "Multiple organizations found. Please select one.",
+          memberships: user.org_users.map((m) => ({
+            orgId: m.org_id,
+            orgName: m.organizations?.name || String(m.org_id),
+            role: m.role,
+          })),
+        },
+        { status: 409 }
+      );
+    }
 
     // choose active org/membership
     let chosen = null;
@@ -41,7 +54,7 @@ export async function POST(req) {
       userId: user.id,
       email: user.email,
       orgId: chosen.org_id,
-      role: chosen.role, // MANAGER / DEVELOPER / TESTER / VIEWER
+      role: chosen.role,
     });
 
     return NextResponse.json({

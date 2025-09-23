@@ -18,9 +18,8 @@ export async function GET(req) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const custom = await prisma.org_custom_roles.findMany({
-      where: { org_id: orgId },
-      orderBy: [{ name: "asc" }],
+    const rows = await prisma.org_custom_roles.findMany({
+      where: { org_id: Number(orgId) },
       select: {
         id: true,
         name: true,
@@ -28,10 +27,20 @@ export async function GET(req) {
         can_send_tickets: true,
         can_create_users: true,
         can_create_orgs: true,
+        can_create_roles: true,   // ✅ NEW
       },
+      orderBy: [{ name: "asc" }],
     });
-
-    return NextResponse.json({ builtin: BUILTIN, custom });
+    return NextResponse.json({
+      custom: rows.map(r => ({
+        ...r,
+        can_view_tickets: !!r.can_view_tickets,
+        can_send_tickets: !!r.can_send_tickets,
+        can_create_users: !!r.can_create_users,
+        can_create_orgs: !!r.can_create_orgs,
+        can_create_roles: !!r.can_create_roles,
+      })),
+    });
   } catch (e) {
     console.error("roles/list error:", e);
     return NextResponse.json({ error: "Failed" }, { status: 500 });

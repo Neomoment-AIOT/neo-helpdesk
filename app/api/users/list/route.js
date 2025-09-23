@@ -12,41 +12,46 @@ export async function GET(req) {
     const orgId = Number(searchParams.get("orgId") || session.orgId);
     const includeChildren = searchParams.get("includeChildren") === "1";
 
-    let allowed = await allowedOrgIdsFor(session);
+    const allowed = await allowedOrgIdsFor(session);
+    if (!allowed.includes(orgId)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-    if (includeChildren && (session.role || "").toUpperCase() === "MANAGER") {
-      if (!allowed.includes(orgId)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      const subtree = await getOrgDescendantIds(orgId);
-      allowed = allowed.filter((id) => subtree.includes(id));
-    } else {
-      if (!allowed.includes(orgId)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      allowed = [orgId];
+    // Fetch selected org type
+    const sel = await prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { org_type: true },
+    });
+
+    // Build the set of org IDs to query
+    let orgIds = [orgId];
+    if (includeChildren && sel?.org_type !== "CLIENT") {
+      const descendantIds = await getOrgDescendantIds(orgId); // array<number>
+      orgIds = [orgId, ...descendantIds];
     }
 
     const rows = await prisma.org_users.findMany({
-      where: { org_id: { in: allowed } },
+      where: { org_id: { in: orgIds } },
       include: {
-        users: { select: { id: true, name: true, email: true } },
-        organizations: { select: { id: true, name: true } },
-        // relation field in your schema is named `org_custom_roles`
-        org_custom_roles: { select: { id: true, name: true } },
+        users: true,
+        organizations: { select: { name: true } },
       },
-      orderBy: [{ org_id: "asc" }],
+      orderBy: [{ org_id: "asc" }, { user_id: "asc" }],
     });
 
-    return NextResponse.json({
-      users: rows.map((m) => ({
-        userId: m.user_id,
-        name: m.users.name,
-        email: m.users.email,
-        orgId: m.org_id,
-        orgName: m.organizations.name,
-        role: m.role,
-        roleType: m.custom_role_id ? "custom" : "builtin",
-        customRoleId: m.custom_role_id || null,
-        roleLabel: m.org_custom_roles ? m.org_custom_roles.name : m.role,
-      })),
-    });
+    const users = rows.map(r => ({
+      userId: r.user_id,
+      email: r.users.email,
+      name: r.users.name,
+      orgId: r.org_id,
+      orgName: r.organizations?.name,
+      role: r.role,
+      roleType: r.custom_role_id ? "CUSTOM" : "BUILTIN",
+      customRoleId: r.custom_role_id ?? null,
+      roleLabel: r.custom_role_id ? undefined : r.role,
+    }));
+
+    return NextResponse.json({ users });
   } catch (e) {
     console.error("users/list error:", e);
     return NextResponse.json({ error: "Failed" }, { status: 500 });

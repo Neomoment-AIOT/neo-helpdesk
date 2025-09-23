@@ -1,17 +1,28 @@
-// app/dashboard/page.jsx
 "use client";
+
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCustomerSession, clearCustomerSession, authHeaders } from "../lib/clientAuth";
+
+// UI components
+import TopTab from "./components/TopTab";
+import Card from "./components/Card";
+import Toggle from "./components/Toggle";
+import AssignControls from "./components/AssignControls";
+import KanbanSection from "./components/KanbanSection";
+import RolesModal from "./components/RolesModal";
+import Meta from "./components/Meta";
 
 const BUILTIN_ROLES = ["MANAGER", "DEVELOPER", "TESTER", "VIEWER"];
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [lastCreatedTicketId, setLastCreatedTicketId] = useState(null);
+  const [copied, setCopied] = useState(false);
 
+  // ---- STATE ----
   const [session, setSession] = useState(null);
-
-  // tabs: users | orgs | roles | tickets | kanban
+  const [tickets, setTickets] = useState([]);
   const [tab, setTab] = useState("users");
 
   // Orgs
@@ -19,20 +30,9 @@ export default function DashboardPage() {
   const [orgChildren, setOrgChildren] = useState([]);
   const [orgSelectId, setOrgSelectId] = useState("");
 
-  // Roles (for selected org)
-  const [customRoles, setCustomRoles] = useState([]); // [{id,name,can_view_tickets,can_send_tickets,can_create_users,can_create_orgs}]
-  const [roleModalOpen, setRoleModalOpen] = useState(false);
-  const [roleForm, setRoleForm] = useState({
-    id: null,
-    name: "",
-    can_view_tickets: true,
-    can_send_tickets: true,
-    can_create_users: false,
-    can_create_orgs: false,
-  });
-
   // Users
   const [users, setUsers] = useState([]);
+
   const [uForm, setUForm] = useState({ name: "", email: "", role: "VIEWER", orgId: "" });
   const [uMsg, setUMsg] = useState("");
 
@@ -41,20 +41,64 @@ export default function DashboardPage() {
   const [tMsg, setTMsg] = useState("");
 
   // Sub-org form
-  const [sForm, setSForm] = useState({ name: "", email: "" });
+  const [sForm, setSForm] = useState({ name: "", email: "", org_type: "NORMAL" });
   const [sMsg, setSMsg] = useState("");
 
-  // --- session ---
+  // Roles (for selected org -> Roles tab list)
+  const [customRoles, setCustomRoles] = useState([]); // [{id,name,can_*}]
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [roleForm, setRoleForm] = useState({
+    id: null,
+    name: "",
+    can_view_tickets: true,
+    can_send_tickets: true,
+    can_create_users: false,
+    can_create_orgs: false,
+    can_create_roles: false, // ✅ NEW
+  });
+
+  // ...
+
+  function openNewRole() {
+    setRoleForm({
+      id: null,
+      name: "",
+      can_view_tickets: true,
+      can_send_tickets: true,
+      can_create_users: false,
+      can_create_orgs: false,
+      can_create_roles: false, // ✅ NEW
+    });
+    setRoleModalOpen(true);
+  }
+
+
+  // Roles cache for users table (per orgId)
+  const [customRolesByOrg, setCustomRolesByOrg] = useState({}); // { [orgId]: [{id,name,...}] }
+
+  // Local state for Kanban modal
+  const [ticketDetail, setTicketDetail] = useState(null);
+  useEffect(() => {
+    if (!tMsg) return;
+    const timer = setTimeout(() => {
+      setTMsg("");
+      setLastCreatedTicketId(null);
+      setCopied(false);
+    }, 60000);
+    return () => clearTimeout(timer);
+  }, [tMsg]);
+
+  // ---- SESSION ----
   useEffect(() => {
     const s = getCustomerSession();
     if (!s) {
-      router.replace("/login");
+      router.replace("/");
       return;
     }
     setSession(s);
   }, [router]);
 
-  // --- data loaders ---
+  // ---- LOADERS ----
   async function loadOrgs(parentId) {
     try {
       const res = await fetch(`/api/organizations/children?parent_id=${parentId}`, { headers: authHeaders() });
@@ -68,7 +112,7 @@ export default function DashboardPage() {
         setUForm((f) => ({ ...f, orgId: f.orgId || first }));
         setTForm((f) => ({ ...f, organization_id: f.organization_id || first }));
       }
-    } catch {}
+    } catch { }
   }
 
   async function loadUsersFor(selectedOrgId) {
@@ -78,7 +122,7 @@ export default function DashboardPage() {
       const res = await fetch(`/api/users/list?${qs}`, { headers: authHeaders() });
       const data = await res.json();
       if (res.ok) setUsers(data.users || []);
-    } catch {}
+    } catch { }
   }
 
   async function loadRolesFor(orgId) {
@@ -88,25 +132,66 @@ export default function DashboardPage() {
       const data = await res.json();
       if (res.ok) {
         setCustomRoles((data.custom || []).map((cr) => ({
-          can_view_tickets: !!cr.can_view_tickets,
           ...cr,
+          can_view_tickets: !!cr.can_view_tickets,
+          can_create_roles: !!cr.can_create_roles, // ✅ NEW
         })));
       }
-    } catch {}
+    } catch { }
   }
 
+  async function loadTicketsFor(selectedOrgId) {
+    try {
+      const includeChildren = String(selectedOrgId) === String(session.orgId) ? "1" : "0";
+      const qs = new URLSearchParams({ orgId: String(selectedOrgId), includeChildren });
+      const res = await fetch(`/api/tickets/list?${qs}`, { headers: authHeaders() });
+      const data = await res.json();
+      if (res.ok) setTickets(data.tickets || []);
+    } catch { }
+  }
+
+  async function loadRolesForOrg(orgId) {
+    try {
+      const qs = new URLSearchParams({ orgId: String(orgId) });
+      const res = await fetch(`/api/roles/list?${qs}`, { headers: authHeaders() });
+      const data = await res.json();
+      if (!res.ok) return;
+      setCustomRolesByOrg((prev) => ({
+        ...prev,
+        [String(orgId)]: (data.custom || []).map((cr) => ({
+          ...cr,
+          can_view_tickets: !!cr.can_view_tickets,
+          can_create_roles: !!cr.can_create_roles, // ✅ NEW
+        })),
+      }));
+    } catch { }
+  }
+
+  // After session: load orgs
   useEffect(() => {
     if (!session) return;
     loadOrgs(session.orgId);
   }, [session]);
 
+  // When selected org changes: load users + roles + tickets
   useEffect(() => {
     if (!session || !orgSelectId) return;
     loadUsersFor(orgSelectId);
     loadRolesFor(orgSelectId);
+    loadTicketsFor(orgSelectId);
   }, [session, orgSelectId]);
 
-  // --- Tickets ---
+  // When users list changes: ensure we have role lists for each represented org
+  useEffect(() => {
+    if (!users.length) return;
+    const ids = Array.from(new Set(users.map((u) => String(u.orgId))));
+    ids.forEach((id) => {
+      if (!customRolesByOrg[id]) loadRolesForOrg(id);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [users]);
+
+  // ---- TICKETS ----
   async function createTicket() {
     setTMsg("");
     if (!tForm.client_name.trim() || !tForm.description.trim() || !tForm.organization_id) {
@@ -128,14 +213,21 @@ export default function DashboardPage() {
         setTMsg(data?.error || "Failed");
         return;
       }
-      setTMsg(`✅ Ticket created: ${data.ticket_id}`);
+
+      // ✅ set the visible success message + capture the id
+      const id = data?.ticket_id ?? data?.id ?? "";
+      setTMsg(`✅ Ticket created: ${id}`);
+      setLastCreatedTicketId(id);
+      setCopied(false);
+
       setTForm({ client_name: "", description: "", organization_id: orgSelectId });
+      await loadTicketsFor(orgSelectId);
     } catch {
       setTMsg("Failed");
     }
   }
 
-  // --- Users ---
+  // ---- USERS ----
   async function createUser() {
     setUMsg("");
     if (!uForm.name.trim() || !uForm.email.trim() || !uForm.orgId) {
@@ -174,7 +266,8 @@ export default function DashboardPage() {
     });
 
     if (!res.ok) {
-      alert("Failed to update role");
+      const err = await res.json().catch(() => ({}));
+      alert(err?.error || "Failed to update role");
       return;
     }
 
@@ -198,7 +291,8 @@ export default function DashboardPage() {
     if (res.ok) {
       setUsers((prev) => prev.filter((u) => !(u.userId === userId && u.orgId === orgId)));
     } else {
-      alert("Failed to delete");
+      const err = await res.json().catch(() => ({}));
+      alert(err?.error || "Failed to delete");
     }
   }
 
@@ -229,71 +323,148 @@ export default function DashboardPage() {
     }
   }
 
-  // --- Roles modal ---
-  function openNewRole() {
-    setRoleForm({
-      id: null,
-      name: "",
-      can_view_tickets: true,
-      can_send_tickets: true,
-      can_create_users: false,
-      can_create_orgs: false,
-    });
-    setRoleModalOpen(true);
+  // ---- ROLES ----
+  /*  function openNewRole() {
+     setRoleForm({
+       id: null,
+       name: "",
+       can_view_tickets: true,
+       can_send_tickets: true,
+       can_create_users: false,
+       can_create_orgs: false,
+     });
+     setRoleModalOpen(true);
+   } */
+  // add this helper
+  async function fetchOrgInfo(orgId) {
+    const res = await fetch(`/api/organizations/info?orgId=${orgId}`, { headers: authHeaders() });
+    if (!res.ok) return null;
+    return await res.json(); // { id, name, org_type }
   }
+
+
 
   async function saveRole() {
     const payload = { ...roleForm, orgId: Number(orgSelectId) };
-    const res = await fetch("/api/roles/upsert", {
-      method: "POST",
-      headers: authHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      alert(data?.error || "Failed to save role");
-      return;
-    }
-    // optimistic: reflect in dropdown immediately
-    if (data.role) {
-      setCustomRoles((prev) => {
-        const idx = prev.findIndex((r) => r.id === data.role.id);
-        const next = { ...data.role, can_view_tickets: !!data.role.can_view_tickets };
-        if (idx >= 0) {
-          const copy = [...prev];
-          copy[idx] = next;
-          return copy;
-        }
-        return [next, ...prev];
+    try {
+      const res = await fetch("/api/roles/upsert", {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
       });
-    } else {
-      await loadRolesFor(orgSelectId);
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data?.error || "Failed to save role");
+        return;
+      }
+      if (data.role) {
+        setCustomRoles((prev) => {
+          const idx = prev.findIndex((r) => r.id === data.role.id);
+          const next = { ...data.role, can_view_tickets: !!data.role.can_view_tickets };
+          if (idx >= 0) {
+            const copy = [...prev];
+            copy[idx] = next;
+            return copy;
+          }
+          return [next, ...prev];
+        });
+        setCustomRolesByOrg((prev) => ({
+          ...prev,
+          [String(orgSelectId)]: (prev[String(orgSelectId)] || [])
+            .filter((r) => r.id !== data.role.id)
+            .concat([{ ...data.role }]),
+        }));
+      } else {
+        await loadRolesFor(orgSelectId);
+        await loadRolesForOrg(orgSelectId);
+      }
+      setRoleModalOpen(false);
+    } catch {
+      alert("Failed to save role");
     }
-    setRoleModalOpen(false);
   }
 
-  // ---------- permissions & tab gating ----------
-  const allOrgs = useMemo(() => [orgParent, ...orgChildren].filter(Boolean), [orgParent, orgChildren]);
+  // ---- PERMISSIONS & GATING ----
+  const membershipOrgs = useMemo(
+    () => (session?.memberships || []).map((m) => ({ id: m.orgId, name: m.orgName, role: m.role })),
+    [session?.memberships]
+  );
 
-  // my membership row for selected org
+  const multiOrg = membershipOrgs.length > 1;
+
   const myRow = users.find(
     (u) =>
       String(u.orgId) === String(orgSelectId) &&
       (String(u.userId || "") === String(session?.userId || "") ||
         String(u.email || "") === String(session?.email || ""))
   );
+  const selectedOrg = useMemo(() => {
+    if (!orgSelectId) return null;
+    if (String(orgParent?.id) === String(orgSelectId)) return orgParent;
+    return orgChildren.find(c => String(c.id) === String(orgSelectId)) || null;
+  }, [orgSelectId, orgParent, orgChildren]);
 
-  const perms = derivePermissions({
-    sessionRole: session?.role,
-    myRow,
-    customRoles,
-  });
+  const isClientOrg = selectedOrg?.org_type === 'CLIENT';
+  //const canSeeOrgsTab = perms.can_create_orgs && !isClientOrg;  // already in your code
+
+  const selectedOrgName = useMemo(() => {
+    return membershipOrgs.find((o) => String(o.id) === String(orgSelectId))?.name || session?.orgName;
+  }, [membershipOrgs, orgSelectId, session?.orgName]);
+
+  const fallbackRoleFromMembership = useMemo(() => {
+    return membershipOrgs.find((o) => String(o.id) === String(orgSelectId))?.role || session?.role || "VIEWER";
+  }, [membershipOrgs, orgSelectId, session?.role]);
+
+  const effectiveRole = useMemo(() => {
+    const builtIn = myRow?.role ? String(myRow.role).toUpperCase() : null;
+    const fb = fallbackRoleFromMembership ? String(fallbackRoleFromMembership).toUpperCase() : null;
+    return builtIn || fb || "VIEWER";
+  }, [myRow?.role, fallbackRoleFromMembership]);
+
+  const accessibleOrgs = useMemo(() => {
+    const fromMemberships = (session?.memberships || []).map((m) => ({ id: m.orgId, name: m.orgName }));
+    const extras = [orgParent, ...orgChildren].filter(Boolean).map((o) => ({ id: o.id, name: o.name }));
+    const map = new Map();
+    [...fromMemberships, ...extras].forEach((o) => map.set(String(o.id), o));
+    return Array.from(map.values()).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  }, [session?.memberships, orgParent, orgChildren]);
+
+  const perms = useMemo(
+    () => derivePermissions({ effectiveRole, myRow, customRoles }),
+    [effectiveRole, myRow, customRoles]
+  );
 
   const canSeeKanban = perms.can_view_tickets || perms.can_send_tickets;
   const canSeeTicketsTab = perms.can_send_tickets;
   const canSeeUsersTab = perms.can_create_users;
-  const canSeeOrgsTab = perms.can_create_orgs;
-  const canSeeRolesTab = (session?.role || "").toUpperCase() === "MANAGER";
+  const canSeeOrgsTab = perms.can_create_orgs && !isClientOrg;
+  const canSeeRolesTab = effectiveRole === "MANAGER" || perms.can_create_roles;
+
+  const displayRoleLabel = useMemo(() => {
+    if (myRow?.roleLabel) return myRow.roleLabel;
+    if (myRow?.customRoleId) {
+      const cr = customRoles.find((r) => Number(r.id) === Number(myRow.customRoleId));
+      return cr?.name || "Custom";
+    }
+    if (myRow?.role) return myRow.role;
+    return fallbackRoleFromMembership || "VIEWER";
+  }, [myRow, customRoles, fallbackRoleFromMembership]);
+
+  const ticketsByStatus = useMemo(() => {
+    const buckets = {
+      NOT_STARTED: [],
+      IN_PROGRESS: [],
+      ON_HOLD: [],
+      COMPLETED: [],
+      CANCELLED: [],
+    };
+    for (const t of tickets) {
+      (buckets[t.status] || buckets.NOT_STARTED).push(t);
+    }
+    return buckets;
+  }, [tickets]);
+
+  const displayUserName = myRow?.name || session?.name || session?.email;
 
   useEffect(() => {
     const allowedOrder = [
@@ -308,15 +479,11 @@ export default function DashboardPage() {
       setTab(allowedOrder[0] || (canSeeKanban ? "kanban" : tab));
     }
   }, [canSeeUsersTab, canSeeOrgsTab, canSeeRolesTab, canSeeTicketsTab, canSeeKanban, tab]);
-  // ---------- end gating ----------
 
+  // ---- RENDER ----
   if (!session) return null;
 
   const viewingRoot = String(orgSelectId) === String(session.orgId);
-  const roleOptions = [
-    ...BUILTIN_ROLES.map((r) => ({ value: r, label: r })),
-    ...customRoles.map((cr) => ({ value: `custom:${cr.id}`, label: cr.name })),
-  ];
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -326,21 +493,57 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold">N</div>
             <div>
-              <div className="text-xs text-slate-500">Organization</div>
-              <div className="font-semibold">{session.orgName}</div>
-              <div className="text-[11px] text-slate-500">Role: {session.role}</div>
+              <span className="text-sm !text-black font-semibold">{selectedOrgName}</span>
+              <div className="text-xs text-slate-500">
+                Name : <span className="text-sm !text-black font-semibold">{displayUserName}</span>
+              </div>
+              <div className="text-xs text-slate-500">
+                Role : <span className="text-sm !text-black font-semibold">{displayRoleLabel}</span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {canSeeTicketsTab && (
-              <a href="/customer/ticket" className="text-sm border border-slate-300 rounded-lg px-3 py-1.5 hover:bg-slate-50">
-                Customer view
-              </a>
-            )}
+
+            <div className="text-xs text-slate-500">
+              Organization:&nbsp;
+              {membershipOrgs.length > 1 ? (
+                <select
+                  value={orgSelectId}
+                  // in the <select onChange> handler:
+                  onChange={async (e) => {
+                    const v = e.target.value;
+                    setOrgSelectId(v);
+                    setUsers([]); setTickets([]); // avoid stale flash
+                    setUForm(f => ({ ...f, orgId: v }));
+                    setTForm(f => ({ ...f, organization_id: v }));
+                    // ensure org_type is known for this selection
+                    const info = await fetchOrgInfo(v);
+                    if (info) {
+                      // merge into orgParent/orgChildren caches so selectedOrg picks it up
+                      if (String(orgParent?.id) === String(v)) setOrgParent(info);
+                      else if (!orgChildren.some(c => String(c.id) === String(v))) setOrgChildren(cs => [info, ...cs]);
+                    }
+                    loadUsersFor(v);
+                    loadRolesFor(v);
+                    loadTicketsFor(v);
+                  }}
+                  className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
+                >
+                  {membershipOrgs.map((o) => (
+                    <option key={o.id} value={String(o.id)}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="text-sm !text-black font-semibold">{selectedOrgName}</span>
+              )}
+            </div>
+
             <button
               onClick={() => {
                 clearCustomerSession();
-                router.replace("/login");
+                router.replace("/");
               }}
               className="text-sm border border-slate-300 rounded-lg px-3 py-1.5 hover:bg-slate-50"
             >
@@ -358,34 +561,6 @@ export default function DashboardPage() {
               {canSeeRolesTab && <TopTab id="roles" cur={tab} setTab={setTab}>Roles</TopTab>}
               {canSeeTicketsTab && <TopTab id="tickets" cur={tab} setTab={setTab}>Create Tickets</TopTab>}
               {canSeeKanban && <TopTab id="kanban" cur={tab} setTab={setTab}>Kanban</TopTab>}
-
-              {/* Right-side org selector */}
-              <div className="ml-auto flex items-end gap-3">
-                <div>
-                  <label className="block text-[11px] text-slate-500">Context organization</label>
-                  <select
-                    value={orgSelectId}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setOrgSelectId(v);
-                      setUForm((f) => ({ ...f, orgId: v }));
-                      setTForm((f) => ({ ...f, organization_id: v }));
-                      loadUsersFor(v);
-                      loadRolesFor(v);
-                    }}
-                    className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"
-                  >
-                    {allOrgs.map((o) => (
-                      <option key={o.id} value={String(o.id)}>
-                        {o.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <p className="text-[11px] text-slate-500 pb-1.5 whitespace-nowrap">
-                  {viewingRoot ? "Showing root + subtree" : "Showing only this org"}
-                </p>
-              </div>
             </div>
           </div>
         </nav>
@@ -434,7 +609,7 @@ export default function DashboardPage() {
               title={
                 viewingRoot
                   ? `Users in ${orgParent?.name} (incl. subtree)`
-                  : `Users in ${[...allOrgs].find((o) => String(o.id) === String(orgSelectId))?.name || ""}`
+                  : `Users in ${((accessibleOrgs.find((o) => String(o.id) === String(orgSelectId))) || {}).name || ""}`
               }
             >
               <div className="overflow-x-auto">
@@ -450,70 +625,52 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((u) => (
-                      <tr key={`${u.userId}-${u.orgId}`} className="border-t border-slate-200">
-                        <td className="py-2">{u.name}</td>
-                        <td className="py-2">{u.email}</td>
-                        <td className="py-2">{u.orgName}</td>
-                        <td className="py-2">
-                          <select
-                            value={u.customRoleId ? `custom:${u.customRoleId}` : u.role}
-                            onChange={(e) => updateRole(u.userId, u.orgId, e.target.value)}
-                            className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
-                          >
-                            {roleOptions.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="py-2">
-                          <div className="flex items-center gap-2">
+                    {users.map((u) => {
+                      const rowCustom = customRolesByOrg[String(u.orgId)] || [];
+                      const rowRoleOptions = [
+                        ...BUILTIN_ROLES.map((r) => ({ value: r, label: r })),
+                        ...rowCustom.map((cr) => ({ value: `custom:${cr.id}`, label: cr.name })),
+                      ];
+
+                      return (
+                        <tr key={`${u.userId}-${u.orgId}`} className="border-t border-slate-200">
+                          <td className="py-2">{u.name}</td>
+                          <td className="py-2">{u.email}</td>
+                          <td className="py-2">{u.orgName}</td>
+                          <td className="py-2">
                             <select
+                              value={u.customRoleId ? `custom:${u.customRoleId}` : u.role}
+                              onChange={(e) => updateRole(u.userId, u.orgId, e.target.value)}
                               className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
-                              defaultValue={orgSelectId}
-                              id={`assign-org-${u.userId}-${u.orgId}`}
                             >
-                              {allOrgs.map((o) => (
-                                <option key={o.id} value={String(o.id)}>
-                                  {o.name}
-                                </option>
-                              ))}
-                            </select>
-                            <select
-                              className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
-                              defaultValue={BUILTIN_ROLES[3]} // VIEWER
-                              id={`assign-role-${u.userId}-${u.orgId}`}
-                            >
-                              {roleOptions.map((opt) => (
+                              {rowRoleOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value}>
                                   {opt.label}
                                 </option>
                               ))}
                             </select>
+                          </td>
+                          <td className="py-2">
+                            <AssignControls
+                              allOrgs={accessibleOrgs}
+                              defaultOrgId={orgSelectId}
+                              customRolesByOrg={customRolesByOrg}
+                              loadRolesForOrg={loadRolesForOrg}
+                              onAssign={(toOrgId, val) => assignToOrg(u.userId, Number(toOrgId), val)}
+                              builtInRoles={BUILTIN_ROLES}
+                            />
+                          </td>
+                          <td className="py-2">
                             <button
-                              onClick={() => {
-                                const toOrg = document.getElementById(`assign-org-${u.userId}-${u.orgId}`).value;
-                                const val = document.getElementById(`assign-role-${u.userId}-${u.orgId}`).value;
-                                assignToOrg(u.userId, Number(toOrg), val);
-                              }}
-                              className="border border-slate-300 rounded px-2 py-1 text-sm hover:bg-slate-50"
+                              onClick={() => deleteMembership(u.userId, u.orgId)}
+                              className="text-red-600 hover:underline text-sm"
                             >
-                              Add
+                              Remove
                             </button>
-                          </div>
-                        </td>
-                        <td className="py-2">
-                          <button
-                            onClick={() => deleteMembership(u.userId, u.orgId)}
-                            className="text-red-600 hover:underline text-sm"
-                          >
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                        </tr>
+                      );
+                    })}
                     {!users.length && (
                       <tr>
                         <td colSpan={6} className="text-center text-slate-500 py-6">
@@ -544,6 +701,15 @@ export default function DashboardPage() {
                   value={sForm.email}
                   onChange={(e) => setSForm((f) => ({ ...f, email: e.target.value }))}
                 />
+                <select
+                  className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                  value={sForm.org_type}
+                  onChange={(e) => setSForm(f => ({ ...f, org_type: e.target.value }))}
+                >
+                  <option value="NORMAL">Normal</option>
+                  <option value="CLIENT">Client</option>
+                </select>
+
               </div>
               {sMsg && <p className="text-sm pt-2">{sMsg}</p>}
               <div className="pt-2">
@@ -561,6 +727,7 @@ export default function DashboardPage() {
                         parent_id: Number(session.orgId),
                         name: sForm.name.trim(),
                         email: sForm.email || null,
+                        org_type: sForm.org_type,
                       }),
                     });
                     const data = await res.json();
@@ -618,7 +785,10 @@ export default function DashboardPage() {
                 <div className="text-xs text-slate-500 mb-1">Custom roles in this org</div>
                 <ul className="space-y-1">
                   {customRoles.map((cr) => (
-                    <li key={cr.id} className="flex items-center justify-between border border-slate-200 rounded px-3 py-2 bg-white">
+                    <li
+                      key={cr.id}
+                      className="flex items-center justify-between border border-slate-200 rounded px-3 py-2 bg-white"
+                    >
                       <span className="text-sm">
                         {cr.name}
                         <span className="ml-2 text-[11px] text-slate-500">
@@ -628,7 +798,10 @@ export default function DashboardPage() {
                             cr.can_send_tickets && "create tickets",
                             cr.can_create_users && "create users",
                             cr.can_create_orgs && "create orgs",
-                          ].filter(Boolean).join(", ") || "no permissions"}
+                            cr.can_create_roles && "create roles", // ✅ NEW
+                          ]
+                            .filter(Boolean)
+                            .join(", ") || "no permissions"}
                           ]
                         </span>
                       </span>
@@ -639,9 +812,10 @@ export default function DashboardPage() {
                             id: cr.id,
                             name: cr.name,
                             can_view_tickets: !!cr.can_view_tickets,
-                            can_send_tickets: cr.can_send_tickets,
-                            can_create_users: cr.can_create_users,
-                            can_create_orgs: cr.can_create_orgs,
+                            can_send_tickets: !!cr.can_send_tickets,
+                            can_create_users: !!cr.can_create_users,
+                            can_create_orgs: !!cr.can_create_orgs,
+                            can_create_roles: !!cr.can_create_roles, // ✅ NEW
                           });
                           setRoleModalOpen(true);
                         }}
@@ -674,7 +848,42 @@ export default function DashboardPage() {
                   onChange={(e) => setTForm((f) => ({ ...f, description: e.target.value }))}
                 />
               </div>
-              {tMsg && <p className="text-sm pt-2">{tMsg}</p>}
+              {tMsg && (
+                <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+                  <span className="truncate">{tMsg}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {lastCreatedTicketId && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(String(lastCreatedTicketId));
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 1500);
+                          } catch {
+                            alert("Failed to copy");
+                          }
+                        }}
+                        className="border border-green-300 rounded px-2 py-1 text-xs hover:bg-green-100"
+                        title="Copy Ticket ID"
+                      >
+                        {copied ? "Copied!" : "Copy ID"}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setTMsg("");
+                        setLastCreatedTicketId(null);
+                        setCopied(false);
+                      }}
+                      className="text-xs text-green-700 hover:underline"
+                      title="Dismiss"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="pt-2">
                 <button onClick={createTicket} className="btn-primary">
                   Create
@@ -685,59 +894,95 @@ export default function DashboardPage() {
         )}
 
         {tab === "kanban" && (perms.can_view_tickets || perms.can_send_tickets) && (
-          <section className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <KanbanColumn title="Not Started" />
-              <KanbanColumn title="In Progress" />
-              <KanbanColumn title="Completed" />
-            </div>
-            <p className="text-xs text-slate-500">(This is a visual placeholder; no changes to backend behavior.)</p>
-          </section>
+          <KanbanSection
+            ticketsByStatus={ticketsByStatus}
+            ticketsCount={tickets.length}
+            onRefresh={() => loadTicketsFor(orgSelectId)}
+            onOpenTicket={setTicketDetail}
+          />
         )}
       </main>
 
       {/* Roles Modal */}
-      {roleModalOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-4 w-full max-w-md space-y-3 shadow-xl border border-slate-200">
-            <h3 className="font-semibold">Add / Update Role</h3>
-            <input
-              className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
-              placeholder="Role name (e.g. Project Manager)"
-              value={roleForm.name}
-              onChange={(e) => setRoleForm((f) => ({ ...f, name: e.target.value }))}
-            />
-            <div className="space-y-2">
-              <Toggle
-                label="Can view tickets (Kanban only)"
-                checked={roleForm.can_view_tickets}
-                onChange={(v) => setRoleForm((f) => ({ ...f, can_view_tickets: v }))}
-              />
-              <Toggle
-                label="Can create tickets"
-                checked={roleForm.can_send_tickets}
-                onChange={(v) => setRoleForm((f) => ({ ...f, can_send_tickets: v }))}
-              />
-              <Toggle
-                label="Can create users"
-                checked={roleForm.can_create_users}
-                onChange={(v) => setRoleForm((f) => ({ ...f, can_create_users: v }))}
-              />
-              <Toggle
-                label="Can create organizations"
-                checked={roleForm.can_create_orgs}
-                onChange={(v) => setRoleForm((f) => ({ ...f, can_create_orgs: v }))}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
+      <RolesModal
+        open={roleModalOpen}
+        onClose={() => setRoleModalOpen(false)}
+        roleForm={roleForm}
+        setRoleForm={setRoleForm}
+        onSave={saveRole}
+        orgSelectId={orgSelectId}
+      />
+
+      {/* Ticket Detail Modal (uses <Meta/>) */}
+      {ticketDetail && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          onClick={() => setTicketDetail(null)}
+          aria-modal="true"
+          role="dialog"
+        >
+          <div
+            className="bg-white w-full max-w-2xl rounded-xl shadow-xl border border-slate-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-4 py-3 border-b border-slate-200 flex items-start justify-between">
+              <div>
+                <div className="text-sm text-slate-500">Ticket</div>
+                <div className="text-lg font-semibold">
+                  #{ticketDetail.ticket_id} — {ticketDetail.client_name || "Untitled ticket"}
+                </div>
+                {ticketDetail.status && (
+                  <span className="inline-block mt-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600">
+                    {ticketDetail.status}
+                  </span>
+                )}
+              </div>
               <button
-                className="border border-slate-300 rounded px-3 py-1.5 text-sm hover:bg-slate-50"
-                onClick={() => setRoleModalOpen(false)}
+                className="text-slate-500 hover:text-slate-700 text-xl leading-none px-2"
+                onClick={() => setTicketDetail(null)}
+                aria-label="Close"
+                title="Close"
               >
-                Cancel
+                ×
               </button>
-              <button className="btn-primary" onClick={saveRole} disabled={!orgSelectId || !roleForm.name.trim()}>
-                Save
+            </div>
+
+            <div className="px-4 py-3 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <Meta label="Organization" value={ticketDetail.orgName || ticketDetail.organization_id} />
+                <Meta
+                  label="Created At"
+                  value={ticketDetail.created_at ? new Date(ticketDetail.created_at).toLocaleString() : "-"}
+                />
+                <Meta label="Internal ID" value={ticketDetail.id} />
+                {ticketDetail.updated_at && (
+                  <Meta label="Updated At" value={new Date(ticketDetail.updated_at).toLocaleString()} />
+                )}
+              </div>
+
+              {ticketDetail.description && (
+                <div>
+                  <div className="text-xs text-slate-500 mb-1">Description</div>
+                  <div className="whitespace-pre-wrap text-sm border border-slate-200 rounded-lg p-3 bg-slate-50">
+                    {ticketDetail.description}
+                  </div>
+                </div>
+              )}
+
+              <details className="text-xs text-slate-500">
+                <summary className="cursor-pointer select-none">More details (raw)</summary>
+                <pre className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-lg overflow-auto text-[11px] leading-relaxed">
+                  {JSON.stringify(ticketDetail, null, 2)}
+                </pre>
+              </details>
+            </div>
+
+            <div className="px-4 py-3 border-t border-slate-200 flex justify-end">
+              <button
+                onClick={() => setTicketDetail(null)}
+                className="border border-slate-300 rounded px-3 py-1.5 text-sm hover:bg-slate-50"
+              >
+                Close
               </button>
             </div>
           </div>
@@ -756,18 +1001,7 @@ export default function DashboardPage() {
 
 /* -------- helpers -------- */
 
-function derivePermissions({ sessionRole, myRow, customRoles }) {
-  // Built-in MANAGER: everything
-  if ((sessionRole || "").toUpperCase() === "MANAGER") {
-    return {
-      can_view_tickets: true,
-      can_send_tickets: true,
-      can_create_users: true,
-      can_create_orgs: true,
-    };
-  }
-
-  // Custom role on this org?
+function derivePermissions({ effectiveRole, myRow, customRoles }) {
   if (myRow?.customRoleId) {
     const cr = customRoles.find((r) => Number(r.id) === Number(myRow.customRoleId));
     if (cr) {
@@ -776,63 +1010,30 @@ function derivePermissions({ sessionRole, myRow, customRoles }) {
         can_send_tickets: !!cr.can_send_tickets,
         can_create_users: !!cr.can_create_users,
         can_create_orgs: !!cr.can_create_orgs,
+        can_create_roles: !!cr.can_create_roles, // ✅ NEW
       };
     }
   }
 
-  // Fallback for non-manager built-ins: view-only Kanban
-  return {
-    can_view_tickets: true,
-    can_send_tickets: false,
-    can_create_users: false,
-    can_create_orgs: false,
-  };
-}
-
-/* -------- UI bits -------- */
-
-function TopTab({ id, cur, setTab, children }) {
-  const active = id === cur;
-  return (
-    <button
-      onClick={() => setTab(id)}
-      className={`px-3 py-1.5 rounded-lg text-sm border transition
-        ${active ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"}`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function Card({ title, action, children }) {
-  return (
-    <section className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="font-semibold">{title}</h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Toggle({ label, checked, onChange }) {
-  return (
-    <label className="flex items-center justify-between border border-slate-200 rounded px-3 py-2 text-sm bg-white">
-      <span>{label}</span>
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-    </label>
-  );
-}
-
-function KanbanColumn({ title }) {
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl p-3">
-      <div className="font-medium text-slate-700 mb-2">{title}</div>
-      <div className="space-y-2">
-        <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-700">Sample card</div>
-        <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-700">Sample card</div>
-      </div>
-    </div>
-  );
+  switch ((effectiveRole || "VIEWER").toUpperCase()) {
+    case "MANAGER":
+      return {
+        can_view_tickets: true,
+        can_send_tickets: true,
+        can_create_users: true,
+        can_create_orgs: true,
+        can_create_roles: true, // ✅ NEW: managers can manage roles
+      };
+    case "DEVELOPER":
+    case "TESTER":
+    case "VIEWER":
+    default:
+      return {
+        can_view_tickets: true,
+        can_send_tickets: false,
+        can_create_users: false,
+        can_create_orgs: false,
+        can_create_roles: false, // ✅ NEW
+      };
+  }
 }

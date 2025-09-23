@@ -18,13 +18,13 @@ export async function GET(req) {
 
     const parent = await prisma.organization.findUnique({
       where: { id: parent_id },
-      select: { id: true, name: true, parent_id: true },
+      select: { id: true, name: true, org_type: true },        // 👈 include org_type
     });
 
     const children = await prisma.organization.findMany({
       where: { parent_id },
-      select: { id: true, name: true, parent_id: true },
-      orderBy: [{ name: "asc" }],
+      select: { id: true, name: true, org_type: true },         // 👈 include org_type
+      orderBy: { name: "asc" },
     });
 
     return NextResponse.json({ parent, children });

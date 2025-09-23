@@ -28,6 +28,7 @@ model Organization {
   country             String?            @db.VarChar(120)
   latitude            Float?
   longitude           Float?
+  org_type            String             @default("NORMAL")
   members             Member[]
   org_custom_roles    org_custom_roles[]
   org_users           org_users[]
@@ -177,6 +178,7 @@ model org_custom_roles {
   created_at       DateTime     @default(now()) @db.Timestamptz(6)
   updated_at       DateTime     @default(now()) @db.Timestamptz(6)
   can_view_tickets Boolean      @default(true)
+  can_create_roles Boolean      @default(false)
   organizations    Organization @relation(fields: [org_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_org_custom_roles_org")
   org_users        org_users[]
 
