@@ -486,7 +486,7 @@ export default function DashboardPage() {
   const viewingRoot = String(orgSelectId) === String(session.orgId);
 
   return (
-    <div className="min-h-screen bg-gray-200 text-slate-900">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -545,7 +545,7 @@ export default function DashboardPage() {
                 clearCustomerSession();
                 router.replace("/");
               }}
-              className="text-sm border bg-black text-white rounded-lg px-3 py-1.5 hover:bg-gray-800"
+              className="text-sm border border-slate-300 rounded-lg px-3 py-1.5 hover:bg-slate-50"
             >
               Log out
             </button>
@@ -688,32 +688,31 @@ export default function DashboardPage() {
         {tab === "orgs" && canSeeOrgsTab && (
           <section className="space-y-6">
             <Card title="Create Sub-Organization">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input
-                  className="border border-slate-300 rounded-lg px-4 py-2.5 text-base"
+                  className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
                   placeholder="Name"
                   value={sForm.name}
                   onChange={(e) => setSForm((f) => ({ ...f, name: e.target.value }))}
                 />
                 <input
-                  className="border border-slate-300 rounded-lg px-4 py-2.5 text-base"
+                  className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
                   placeholder="Email (optional)"
                   value={sForm.email}
                   onChange={(e) => setSForm((f) => ({ ...f, email: e.target.value }))}
                 />
                 <select
-                  className="border border-slate-300 rounded-lg px-4 py-2.5 text-base"
+                  className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
                   value={sForm.org_type}
                   onChange={(e) => setSForm(f => ({ ...f, org_type: e.target.value }))}
                 >
                   <option value="NORMAL">Normal</option>
                   <option value="CLIENT">Client</option>
                 </select>
+
               </div>
-
-              {sMsg && <p className="text-base pt-3">{sMsg}</p>}
-
-              <div className="pt-3">
+              {sMsg && <p className="text-sm pt-2">{sMsg}</p>}
+              <div className="pt-2">
                 <button
                   onClick={async () => {
                     setSMsg("");
@@ -740,7 +739,7 @@ export default function DashboardPage() {
                     setSForm({ name: "", email: "" });
                     await loadOrgs(session.orgId);
                   }}
-                  className="btn-primary text-base px-5 py-2.5"
+                  className="btn-primary"
                 >
                   Create Sub-Org
                 </button>
@@ -748,26 +747,23 @@ export default function DashboardPage() {
             </Card>
 
             <Card title={`Children of ${orgParent?.name || ""}`}>
-              <ul className="space-y-3">
+              <ul className="space-y-2">
                 {orgChildren.map((c) => (
                   <li
                     key={c.id}
-                    className="border border-slate-200 rounded-lg px-4 py-3 flex items-center justify-between bg-white"
+                    className="border border-slate-200 rounded-lg px-3 py-2 flex items-center justify-between bg-white"
                   >
                     <div>
-                      <div className="text-base font-medium">{c.name}</div>
-                      <div className="text-sm text-slate-500">ID: {c.id}</div>
+                      <div className="text-sm font-medium">{c.name}</div>
+                      <div className="text-[11px] text-slate-500">ID: {c.id}</div>
                     </div>
                   </li>
                 ))}
-                {!orgChildren.length && (
-                  <li className="text-base text-slate-500">No sub-organizations yet.</li>
-                )}
+                {!orgChildren.length && <li className="text-sm text-slate-500">No sub-organizations yet.</li>}
               </ul>
             </Card>
           </section>
         )}
-
 
         {tab === "roles" && canSeeRolesTab && (
           <section className="space-y-6">
@@ -784,27 +780,25 @@ export default function DashboardPage() {
                 </button>
               }
             >
-              <div className="text-base text-slate-600 mb-2">
-                Built-in: {BUILTIN_ROLES.join(", ")}
-              </div>
+              <div className="text-sm text-slate-600 mb-2">Built-in: {BUILTIN_ROLES.join(", ")}</div>
               <div>
-                <div className="text-sm text-slate-500 mb-1">Custom roles in this org</div>
-                <ul className="space-y-2">
+                <div className="text-xs text-slate-500 mb-1">Custom roles in this org</div>
+                <ul className="space-y-1">
                   {customRoles.map((cr) => (
                     <li
                       key={cr.id}
-                      className="flex items-center justify-between border border-slate-200 rounded px-4 py-3 bg-white"
+                      className="flex items-center justify-between border border-slate-200 rounded px-3 py-2 bg-white"
                     >
-                      <span className="text-base">
+                      <span className="text-sm">
                         {cr.name}
-                        <span className="ml-2 text-sm text-slate-500">
+                        <span className="ml-2 text-[11px] text-slate-500">
                           [
                           {[
                             cr.can_view_tickets && "view",
                             cr.can_send_tickets && "create tickets",
                             cr.can_create_users && "create users",
                             cr.can_create_orgs && "create orgs",
-                            cr.can_create_roles && "create roles",
+                            cr.can_create_roles && "create roles", // ✅ NEW
                           ]
                             .filter(Boolean)
                             .join(", ") || "no permissions"}
@@ -812,7 +806,7 @@ export default function DashboardPage() {
                         </span>
                       </span>
                       <button
-                        className="text-sm underline"
+                        className="text-xs underline"
                         onClick={() => {
                           setRoleForm({
                             id: cr.id,
@@ -821,7 +815,7 @@ export default function DashboardPage() {
                             can_send_tickets: !!cr.can_send_tickets,
                             can_create_users: !!cr.can_create_users,
                             can_create_orgs: !!cr.can_create_orgs,
-                            can_create_roles: !!cr.can_create_roles,
+                            can_create_roles: !!cr.can_create_roles, // ✅ NEW
                           });
                           setRoleModalOpen(true);
                         }}
@@ -830,9 +824,7 @@ export default function DashboardPage() {
                       </button>
                     </li>
                   ))}
-                  {!customRoles.length && (
-                    <li className="text-base text-slate-500">No custom roles yet.</li>
-                  )}
+                  {!customRoles.length && <li className="text-sm text-slate-500">No custom roles yet.</li>}
                 </ul>
               </div>
             </Card>
@@ -842,23 +834,22 @@ export default function DashboardPage() {
         {tab === "tickets" && canSeeTicketsTab && (
           <section className="space-y-6">
             <Card title="Create Ticket">
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-3">
                 <input
-                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                   placeholder="Client name"
                   value={tForm.client_name}
                   onChange={(e) => setTForm((f) => ({ ...f, client_name: e.target.value }))}
                 />
                 <textarea
-                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm min-h-[120px] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm min-h-[120px]"
                   placeholder="Describe the issue"
                   value={tForm.description}
                   onChange={(e) => setTForm((f) => ({ ...f, description: e.target.value }))}
                 />
               </div>
-
               {tMsg && (
-                <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-green-300 bg-green-50 px-4 py-2.5 text-sm text-green-800 shadow-sm">
+                <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
                   <span className="truncate">{tMsg}</span>
                   <div className="flex items-center gap-2 shrink-0">
                     {lastCreatedTicketId && (
@@ -872,7 +863,7 @@ export default function DashboardPage() {
                             alert("Failed to copy");
                           }
                         }}
-                        className="border border-green-400 rounded-md px-3 py-1.5 text-xs font-medium bg-white hover:bg-green-100 transition"
+                        className="border border-green-300 rounded px-2 py-1 text-xs hover:bg-green-100"
                         title="Copy Ticket ID"
                       >
                         {copied ? "Copied!" : "Copy ID"}
@@ -893,11 +884,8 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              <div className="pt-4">
-                <button
-                  onClick={createTicket}
-                  className="w-full bg-black text-white text-sm font-medium rounded-lg px-4 py-2.5 hover:bg-gray-800 transition"
-                >
+              <div className="pt-2">
+                <button onClick={createTicket} className="btn-primary">
                   Create
                 </button>
               </div>
@@ -934,23 +922,23 @@ export default function DashboardPage() {
           role="dialog"
         >
           <div
-            className="bg-white w-full max-w-2xl rounded-xl shadow-2xl border border-slate-200"
+            className="bg-white w-full max-w-2xl rounded-xl shadow-xl border border-slate-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-5 py-4 border-b border-slate-200 flex items-start justify-between">
+            <div className="px-4 py-3 border-b border-slate-200 flex items-start justify-between">
               <div>
-                <div className="text-xs font-medium text-slate-500 uppercase">Ticket</div>
-                <div className="text-lg font-semibold text-slate-800">
+                <div className="text-sm text-slate-500">Ticket</div>
+                <div className="text-lg font-semibold">
                   #{ticketDetail.ticket_id} — {ticketDetail.client_name || "Untitled ticket"}
                 </div>
                 {ticketDetail.status && (
-                  <span className="inline-block mt-2 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 border border-slate-300 text-slate-700">
+                  <span className="inline-block mt-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600">
                     {ticketDetail.status}
                   </span>
                 )}
               </div>
               <button
-                className="text-slate-400 hover:text-slate-600 text-xl leading-none px-2"
+                className="text-slate-500 hover:text-slate-700 text-xl leading-none px-2"
                 onClick={() => setTicketDetail(null)}
                 aria-label="Close"
                 title="Close"
@@ -959,8 +947,8 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            <div className="px-5 py-4 space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div className="px-4 py-3 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <Meta label="Organization" value={ticketDetail.orgName || ticketDetail.organization_id} />
                 <Meta
                   label="Created At"
@@ -975,7 +963,7 @@ export default function DashboardPage() {
               {ticketDetail.description && (
                 <div>
                   <div className="text-xs text-slate-500 mb-1">Description</div>
-                  <div className="whitespace-pre-wrap text-sm border border-slate-200 rounded-lg p-3 bg-slate-50 text-slate-700">
+                  <div className="whitespace-pre-wrap text-sm border border-slate-200 rounded-lg p-3 bg-slate-50">
                     {ticketDetail.description}
                   </div>
                 </div>
@@ -983,16 +971,16 @@ export default function DashboardPage() {
 
               <details className="text-xs text-slate-500">
                 <summary className="cursor-pointer select-none">More details (raw)</summary>
-                <pre className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-lg overflow-auto text-[11px] leading-relaxed text-slate-700">
+                <pre className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-lg overflow-auto text-[11px] leading-relaxed">
                   {JSON.stringify(ticketDetail, null, 2)}
                 </pre>
               </details>
             </div>
 
-            <div className="px-5 py-4 border-t border-slate-200 flex justify-end">
+            <div className="px-4 py-3 border-t border-slate-200 flex justify-end">
               <button
                 onClick={() => setTicketDetail(null)}
-                className="px-4 py-2 rounded-lg text-sm bg-black text-white hover:bg-gray-800 transition-colors"
+                className="border border-slate-300 rounded px-3 py-1.5 text-sm hover:bg-slate-50"
               >
                 Close
               </button>

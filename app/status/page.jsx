@@ -37,7 +37,7 @@ export default function TicketDetails() {
         />
         <button
           onClick={fetchTicket}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          className="bg-blue-600 !text-white px-4 py-2 rounded"
         >
           Search
         </button>
@@ -65,7 +65,7 @@ export default function TicketDetails() {
               ))}
             </ul>
           ) : (
-            <p className="text-gray-500">No history available</p>
+            <p className="!text-gray-500">No history available</p>
           )}
         </div>
       )}

@@ -1,82 +1,121 @@
+// app/login/page.jsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveCustomerSession } from "./lib/clientAuth";
+import { saveCustomerSession } from "@/app/lib/clientAuth";
 
-export default function SignupPage() {
+export default function LoginPage() {
   const router = useRouter();
-  const [orgName, setOrgName] = useState("");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
 
-  async function handleSignup(e) {
-    e.preventDefault();
-    setErr("");
-    if (!orgName.trim() || !name.trim() || !email.trim() || !pass.trim()) {
-      setErr("Please fill all fields.");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // selected org (when needed)
+  const [orgId, setOrgId] = useState("");
+
+  // memberships fetched for this email
+  const [memberships, setMemberships] = useState([]); // [{orgId, orgName, role}]
+  const [checking, setChecking] = useState(false);
+  const [animateDrop, setAnimateDrop] = useState(false);
+
+  const [msg, setMsg] = useState("");
+
+  // fetch org memberships when email changes (debounced)
+  useEffect(() => {
+    setMsg("");
+    setMemberships([]);
+    setOrgId("");
+
+    const e = email.trim().toLowerCase();
+    if (!e) return;
+
+    const t = setTimeout(async () => {
+      setChecking(true);
+      try {
+        const res = await fetch(`/api/public/memberships?email=${encodeURIComponent(e)}`);
+        const data = await res.json();
+        if (res.ok) {
+          const m = Array.isArray(data.memberships) ? data.memberships : [];
+          setMemberships(m);
+
+          if (m.length === 1) {
+            // single org -> auto-select
+            setOrgId(String(m[0].orgId));
+          } else if (m.length > 1) {
+            // multiple orgs -> attention animate
+            setAnimateDrop(true);
+            setTimeout(() => setAnimateDrop(false), 1200);
+          }
+        } else {
+          // don’t block login; just show message
+          setMsg(data?.error || "Could not check memberships");
+        }
+      } catch {
+        // silent failure is fine; user can still attempt login
+      } finally {
+        setChecking(false);
+      }
+    }, 450);
+
+    return () => clearTimeout(t);
+  }, [email]);
+
+  const multiOrgs = memberships.length > 1;
+  const mustChooseOrg = multiOrgs; // enforce pick when multiple
+  const loginDisabled =
+    checking ||
+    !email.trim() ||
+    !password.trim() ||
+    (mustChooseOrg && !orgId);
+
+  async function doLogin() {
+    setMsg("");
+
+    // enforce UI rule in case of race:
+    if (multiOrgs && !orgId) {
+      setMsg("Please select your organization.");
       return;
     }
-    setLoading(true);
+
     try {
-      const res = await fetch("/api/public/signup", {
+      const res = await fetch("/api/public/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          organizationName: orgName.trim(),
-          name: name.trim(),
           email: email.trim(),
-          password: pass,
+          password: password.trim(),
+          orgId: orgId ? Number(orgId) : undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setErr(data?.error || "Sign up failed");
-      } else {
-        // expected: { token, orgId, orgName, name, email }
-        saveCustomerSession(data);
-        router.replace("/customer/ticket");
+        // Special case: server wants an org selection
+        if (res.status === 409 && Array.isArray(data.memberships)) {
+          setMemberships(data.memberships);
+          setMsg("Select your organization to continue.");
+          setAnimateDrop(true);
+          setTimeout(() => setAnimateDrop(false), 1200);
+          return;
+        }
+        setMsg(data?.error || "Login failed");
+        return;
       }
+      saveCustomerSession(data);
+      router.replace("/dashboard");
     } catch {
-      setErr("Network error. Try again.");
-    } finally {
-      setLoading(false);
+      setMsg("Login failed");
     }
   }
 
   return (
-<<<<<<< Updated upstream
-    <div className="min-h-screen flex items-center justify-center bg-gray-200 px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6">
-        <div className="mb-6">
-          <h1 className="text-xl font-semibold">Create your account</h1>
-          <p className="text-sm text-gray-500">
-            Register your organization and start submitting tickets.
-          </p>
-        </div>
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <h1 className="text-lg font-semibold mb-4">Sign in</h1>
 
-        <form onSubmit={handleSignup} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Organization name
-            </label>
-            <input
-              className="w-full rounded-lg px-3 py-2.5 text-sm bg-gray-100 outline-none focus:ring-2 focus:ring-blue-200"
-              placeholder="e.g., Acme Corp"
-              value={orgName}
-              onChange={(e) => setOrgName(e.target.value)}
-            />
-=======
-    <main className="min-h-screen bg-gray-200 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold mb-6">Sign in</h1>
-
-        <label className="text-base block mb-2">Email</label>
+        <label className="text-sm block mb-1">Email</label>
         <input
-          className="w-full border border-slate-300 rounded px-4 py-3 text-base mb-4"
+          className="w-full border border-slate-300 rounded px-3 py-2 text-sm mb-3"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
@@ -84,21 +123,22 @@ export default function SignupPage() {
           autoComplete="username"
         />
 
-        <label className="text-base block mb-2">Password</label>
+        <label className="text-sm block mb-1">Password</label>
         <input
           type="password"
-          className="w-full border border-slate-300 rounded px-4 py-3 text-base mb-4"
+          className="w-full border border-slate-300 rounded px-3 py-2 text-sm mb-3"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
           autoComplete="current-password"
         />
 
+        {/* Org picker appears only when needed */}
         {multiOrgs && (
           <div className={`transition ${animateDrop ? "animate-pulse" : ""}`}>
-            <label className="text-base block mb-2">Choose your organization</label>
+            <label className="text-sm block mb-1">Choose your organization</label>
             <select
-              className="w-full border border-indigo-300 rounded px-4 py-3 text-base mb-4 bg-white focus:outline-none"
+              className="w-full border border-indigo-300 rounded px-3 py-2 text-sm mb-3 bg-white focus:outline-none"
               value={orgId}
               onChange={(e) => setOrgId(e.target.value)}
             >
@@ -111,90 +151,35 @@ export default function SignupPage() {
                 </option>
               ))}
             </select>
-            <p className="text-sm text-slate-500 -mt-2 mb-3">
+            <p className="text-[11px] text-slate-500 -mt-2 mb-2">
               We found multiple organizations for this email. Please pick one.
             </p>
->>>>>>> Stashed changes
           </div>
+        )}
 
-<<<<<<< Updated upstream
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium mb-1">Your name</label>
-              <input
-                className="w-full rounded-lg px-3 py-2.5 text-sm bg-gray-100 outline-none focus:ring-2 focus:ring-blue-200"
-                placeholder="John Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Email</label>
-              <input
-                type="email"
-                className="w-full rounded-lg px-3 py-2.5 text-sm bg-gray-100 outline-none focus:ring-2 focus:ring-blue-200"
-                placeholder="you@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-=======
+        {/* Optional helpful hint when exactly 1 org */}
         {!multiOrgs && orgId && memberships.length === 1 && (
-          <div className="text-sm text-slate-500 mb-4">
+          <div className="text-[12px] text-slate-500 mb-3">
             Organization: <span className="font-medium">{memberships[0].orgName}</span>
->>>>>>> Stashed changes
           </div>
+        )}
 
-<<<<<<< Updated upstream
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              className="w-full rounded-lg px-3 py-2.5 text-sm bg-gray-100 outline-none focus:ring-2 focus:ring-blue-200"
-              placeholder="••••••••"
-              value={pass}
-              onChange={(e) => setPass(e.target.value)}
-            />
-          </div>
-
-          {err && <p className="text-sm text-red-600">{err}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-black hover:bg-gray-800 text-white text-base font-medium rounded-lg py-2.5 disabled:opacity-60"
-          >
-            {loading ? "Creating..." : "Create account"}
-          </button>
-        </form>
-
-        <div className="mt-4 text-center text-base">
-          Already have an account?{" "}
-          <button
-            onClick={() => router.push("/login")}
-            className="text-black hover:underline font-bold"
-          >
-            Log in
-          </button>
-        </div>
-=======
-        {msg && <p className="text-base text-red-600 mb-4">{msg}</p>}
+        {msg && <p className="text-sm text-red-600 mb-3">{msg}</p>}
 
         <button
           onClick={doLogin}
           disabled={loginDisabled}
-          className={`w-full rounded-lg px-4 py-3 text-base text-white ${loginDisabled ? "bg-black cursor-not-allowed" : "bg-black hover:bg-gray-800"
-            }`}
+          className={`w-full rounded-lg px-3 py-2 text-sm text-white ${
+            loginDisabled ? "bg-indigo-300 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
+          }`}
         >
           {checking ? "Checking…" : "Log in"}
         </button>
 
-        <p className="text-sm text-slate-500 mt-4">
+        <p className="text-xs text-slate-500 mt-3">
           New here? <a className="underline" href="/signup">Create an account</a>
         </p>
->>>>>>> Stashed changes
       </div>
-    </div>
+    </main>
   );
 }

@@ -49,52 +49,52 @@ export default function InternalSignup() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-200 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4">
       <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-6">
         <div className="mb-6">
           <h1 className="text-xl font-semibold">Create teammate account</h1>
-          <p className="text-sm text-gray-500">Sign up to manage and assign tickets.</p>
+          <p className="text-sm !text-gray-500">Sign up to manage and assign tickets.</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Full name</label>
             <input className="w-full border rounded-lg px-3 py-2 text-sm"
-              value={name} onChange={(e) => setName(e.target.value)} />
+                   value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-1">Email (optional)</label>
               <input type="email" className="w-full border rounded-lg px-3 py-2 text-sm"
-                value={email} onChange={(e) => setEmail(e.target.value)} />
+                     value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Username (optional)</label>
               <input className="w-full border rounded-lg px-3 py-2 text-sm"
-                value={username} onChange={(e) => setUsername(e.target.value)} />
+                     value={username} onChange={(e) => setUsername(e.target.value)} />
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Password</label>
             <input type="password" className="w-full border rounded-lg px-3 py-2 text-sm"
-              value={password} onChange={(e) => setPass(e.target.value)} />
+                   value={password} onChange={(e) => setPass(e.target.value)} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Primary Team (optional)</label>
             <input type="number" placeholder="Team ID" className="w-full border rounded-lg px-3 py-2 text-sm"
-              value={teamId} onChange={(e) => setTeamId(e.target.value)} />
+                   value={teamId} onChange={(e) => setTeamId(e.target.value)} />
           </div>
 
-          {err && <p className="text-sm text-red-600">{err}</p>}
+          {err && <p className="text-sm !text-red-600">{err}</p>}
 
           <button type="submit" disabled={loading}
-            className="w-full bg-black hover:bg-gray-900 text-white text-base font-medium rounded-lg py-2.5 disabled:opacity-60">
+            className="w-full bg-blue-600 hover:bg-blue-700 !text-white text-sm font-medium rounded-lg py-2.5 disabled:opacity-60">
             {loading ? "Creating..." : "Create account"}
           </button>
         </form>
 
-        <div className="mt-4 text-center text-base">
+        <div className="mt-4 text-center text-sm">
           Already have an account?{" "}
-          <a href="/member" className="text-black font-bold hover:underline">Sign in</a>
+          <a href="/internal/login" className="!text-blue-600 hover:underline">Sign in</a>
         </div>
       </div>
     </div>

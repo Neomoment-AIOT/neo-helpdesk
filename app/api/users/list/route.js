@@ -1,4 +1,4 @@
-// app/api/tickets/list/route.js
+// app/api/users/list/route.js
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/db";
 import { requireAuth, allowedOrgIdsFor, getOrgDescendantIds } from "@/app/lib/auth";
@@ -17,41 +17,43 @@ export async function GET(req) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Fetch selected org type
     const sel = await prisma.organization.findUnique({
       where: { id: orgId },
       select: { org_type: true },
     });
 
+    // Build the set of org IDs to query
     let orgIds = [orgId];
     if (includeChildren && sel?.org_type !== "CLIENT") {
-      const descendantIds = await getOrgDescendantIds(orgId);
+      const descendantIds = await getOrgDescendantIds(orgId); // array<number>
       orgIds = [orgId, ...descendantIds];
     }
 
-    const tickets = await prisma.ticket.findMany({
-      where: { organization_id: { in: orgIds } },
-      orderBy: [{ created_at: "desc" }],
-      select: {
-        id: true,
-        ticket_id: true,
-        client_name: true,
-        description: true,
-        status: true,
-        created_at: true,
-        updated_at: true,
-        organization_id: true,
-        organization: { select: { name: true } },
+    const rows = await prisma.org_users.findMany({
+      where: { org_id: { in: orgIds } },
+      include: {
+        users: true,
+        organizations: { select: { name: true } },
       },
+      orderBy: [{ org_id: "asc" }, { user_id: "asc" }],
     });
 
-    return NextResponse.json({
-      tickets: tickets.map(t => ({
-        ...t,
-        orgName: t.organization?.name,
-      })),
-    });
+    const users = rows.map(r => ({
+      userId: r.user_id,
+      email: r.users.email,
+      name: r.users.name,
+      orgId: r.org_id,
+      orgName: r.organizations?.name,
+      role: r.role,
+      roleType: r.custom_role_id ? "CUSTOM" : "BUILTIN",
+      customRoleId: r.custom_role_id ?? null,
+      roleLabel: r.custom_role_id ? undefined : r.role,
+    }));
+
+    return NextResponse.json({ users });
   } catch (e) {
-    console.error("tickets/list error:", e);
+    console.error("users/list error:", e);
     return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }
