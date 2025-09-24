@@ -48,6 +48,7 @@ export default function SignupPage() {
   }
 
   return (
+<<<<<<< Updated upstream
     <div className="min-h-screen flex items-center justify-center bg-gray-200 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6">
         <div className="mb-6">
@@ -68,8 +69,55 @@ export default function SignupPage() {
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
             />
+=======
+    <main className="min-h-screen bg-gray-200 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <h1 className="text-2xl font-semibold mb-6">Sign in</h1>
+
+        <label className="text-base block mb-2">Email</label>
+        <input
+          className="w-full border border-slate-300 rounded px-4 py-3 text-base mb-4"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          inputMode="email"
+          autoComplete="username"
+        />
+
+        <label className="text-base block mb-2">Password</label>
+        <input
+          type="password"
+          className="w-full border border-slate-300 rounded px-4 py-3 text-base mb-4"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="••••••••"
+          autoComplete="current-password"
+        />
+
+        {multiOrgs && (
+          <div className={`transition ${animateDrop ? "animate-pulse" : ""}`}>
+            <label className="text-base block mb-2">Choose your organization</label>
+            <select
+              className="w-full border border-indigo-300 rounded px-4 py-3 text-base mb-4 bg-white focus:outline-none"
+              value={orgId}
+              onChange={(e) => setOrgId(e.target.value)}
+            >
+              <option value="" disabled>
+                Select organization…
+              </option>
+              {memberships.map((m) => (
+                <option key={m.orgId} value={String(m.orgId)}>
+                  {m.orgName}
+                </option>
+              ))}
+            </select>
+            <p className="text-sm text-slate-500 -mt-2 mb-3">
+              We found multiple organizations for this email. Please pick one.
+            </p>
+>>>>>>> Stashed changes
           </div>
 
+<<<<<<< Updated upstream
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium mb-1">Your name</label>
@@ -91,8 +139,14 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
+=======
+        {!multiOrgs && orgId && memberships.length === 1 && (
+          <div className="text-sm text-slate-500 mb-4">
+            Organization: <span className="font-medium">{memberships[0].orgName}</span>
+>>>>>>> Stashed changes
           </div>
 
+<<<<<<< Updated upstream
           <div>
             <label className="block text-sm font-medium mb-1">Password</label>
             <input
@@ -124,6 +178,22 @@ export default function SignupPage() {
             Log in
           </button>
         </div>
+=======
+        {msg && <p className="text-base text-red-600 mb-4">{msg}</p>}
+
+        <button
+          onClick={doLogin}
+          disabled={loginDisabled}
+          className={`w-full rounded-lg px-4 py-3 text-base text-white ${loginDisabled ? "bg-black cursor-not-allowed" : "bg-black hover:bg-gray-800"
+            }`}
+        >
+          {checking ? "Checking…" : "Log in"}
+        </button>
+
+        <p className="text-sm text-slate-500 mt-4">
+          New here? <a className="underline" href="/signup">Create an account</a>
+        </p>
+>>>>>>> Stashed changes
       </div>
     </div>
   );
