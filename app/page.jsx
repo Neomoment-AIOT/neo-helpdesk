@@ -109,13 +109,13 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-        <h1 className="text-lg font-semibold mb-4">Sign in</h1>
+    <main className="min-h-screen bg-gray-200 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <h1 className="text-2xl font-semibold mb-5">Sign in</h1>
 
-        <label className="text-sm block mb-1">Email</label>
+        <label className="text-base block mb-1">Email</label>
         <input
-          className="w-full border border-slate-300 rounded px-3 py-2 text-sm mb-3"
+          className="w-full border border-slate-300 rounded px-3 py-2 text-base mb-4"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
@@ -123,10 +123,10 @@ export default function LoginPage() {
           autoComplete="username"
         />
 
-        <label className="text-sm block mb-1">Password</label>
+        <label className="text-base block mb-1">Password</label>
         <input
           type="password"
-          className="w-full border border-slate-300 rounded px-3 py-2 text-sm mb-3"
+          className="w-full border border-slate-300 rounded px-3 py-2 text-base mb-4"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
@@ -136,9 +136,9 @@ export default function LoginPage() {
         {/* Org picker appears only when needed */}
         {multiOrgs && (
           <div className={`transition ${animateDrop ? "animate-pulse" : ""}`}>
-            <label className="text-sm block mb-1">Choose your organization</label>
+            <label className="text-base block mb-1">Choose your organization</label>
             <select
-              className="w-full border border-indigo-300 rounded px-3 py-2 text-sm mb-3 bg-white focus:outline-none"
+              className="w-full border border-indigo-300 rounded px-3 py-2 text-base mb-3 bg-white focus:outline-none"
               value={orgId}
               onChange={(e) => setOrgId(e.target.value)}
             >
@@ -151,7 +151,7 @@ export default function LoginPage() {
                 </option>
               ))}
             </select>
-            <p className="text-[11px] text-slate-500 -mt-2 mb-2">
+            <p className="text-sm text-slate-500 -mt-2 mb-2">
               We found multiple organizations for this email. Please pick one.
             </p>
           </div>
@@ -159,24 +159,23 @@ export default function LoginPage() {
 
         {/* Optional helpful hint when exactly 1 org */}
         {!multiOrgs && orgId && memberships.length === 1 && (
-          <div className="text-[12px] text-slate-500 mb-3">
+          <div className="text-sm text-slate-500 mb-3">
             Organization: <span className="font-medium">{memberships[0].orgName}</span>
           </div>
         )}
 
-        {msg && <p className="text-sm text-red-600 mb-3">{msg}</p>}
+        {msg && <p className="text-base text-red-600 mb-3">{msg}</p>}
 
         <button
           onClick={doLogin}
           disabled={loginDisabled}
-          className={`w-full rounded-lg px-3 py-2 text-sm text-white ${
-            loginDisabled ? "bg-indigo-300 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
-          }`}
+          className={`w-full rounded-lg px-3 py-2 text-base text-white ${loginDisabled ? "bg-black cursor-not-allowed" : "bg-black hover:bg-gray-800"
+            }`}
         >
           {checking ? "Checking…" : "Log in"}
         </button>
 
-        <p className="text-xs text-slate-500 mt-3">
+        <p className="text-sm text-slate-500 mt-4">
           New here? <a className="underline" href="/signup">Create an account</a>
         </p>
       </div>

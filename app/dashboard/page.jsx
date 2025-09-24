@@ -486,7 +486,7 @@ export default function DashboardPage() {
   const viewingRoot = String(orgSelectId) === String(session.orgId);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-gray-200 text-slate-900">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -494,17 +494,17 @@ export default function DashboardPage() {
             <div className="h-8 w-8 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold">N</div>
             <div>
               <span className="text-sm !text-black font-semibold">{selectedOrgName}</span>
-              <div className="text-xs text-slate-500">
+              <div className="text-base text-slate-500">
                 Name : <span className="text-sm !text-black font-semibold">{displayUserName}</span>
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="text-base text-slate-500">
                 Role : <span className="text-sm !text-black font-semibold">{displayRoleLabel}</span>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
 
-            <div className="text-xs text-slate-500">
+            <div className="text-base text-slate-500">
               Organization:&nbsp;
               {membershipOrgs.length > 1 ? (
                 <select
@@ -545,7 +545,7 @@ export default function DashboardPage() {
                 clearCustomerSession();
                 router.replace("/");
               }}
-              className="text-sm border border-slate-300 rounded-lg px-3 py-1.5 hover:bg-slate-50"
+              className="text-sm border bg-black rounded-lg px-3 py-1.5 text-white cursor-pointer hover:bg-gray-800"
             >
               Log out
             </button>
@@ -568,24 +568,24 @@ export default function DashboardPage() {
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {tab === "users" && canSeeUsersTab && (
-          <section className="space-y-6">
+          <section className="space-y-8"> {/* Increased spacing */}
             {/* Create user card */}
             <Card title="Create User">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4"> {/* Increased gap */}
                 <input
-                  className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-slate-300 rounded-lg px-4 py-3 text-base"
                   placeholder="Name"
                   value={uForm.name}
                   onChange={(e) => setUForm((f) => ({ ...f, name: e.target.value }))}
                 />
                 <input
-                  className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-slate-300 rounded-lg px-4 py-3 text-base"
                   placeholder="Email"
                   value={uForm.email}
                   onChange={(e) => setUForm((f) => ({ ...f, email: e.target.value }))}
                 />
                 <select
-                  className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-slate-300 rounded-lg px-4 py-3 text-base"
                   value={uForm.role}
                   onChange={(e) => setUForm((f) => ({ ...f, role: e.target.value }))}
                 >
@@ -596,9 +596,9 @@ export default function DashboardPage() {
                   ))}
                 </select>
               </div>
-              {uMsg && <p className="text-sm pt-2">{uMsg}</p>}
-              <div className="pt-2">
-                <button onClick={createUser} className="btn-primary">
+              {uMsg && <p className="text-base pt-3">{uMsg}</p>}
+              <div className="pt-4">
+                <button onClick={createUser} className="btn-primary text-base px-5 py-2.5">
                   Create User
                 </button>
               </div>
@@ -613,15 +613,15 @@ export default function DashboardPage() {
               }
             >
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-base"> {/* Increased text size */}
                   <thead>
                     <tr className="text-left text-slate-600">
-                      <th className="py-2">Name</th>
-                      <th className="py-2">Email</th>
-                      <th className="py-2">Org</th>
-                      <th className="py-2">Role</th>
-                      <th className="py-2">Assign to Org</th>
-                      <th className="py-2">Actions</th>
+                      <th className="py-3">Name</th>
+                      <th className="py-3">Email</th>
+                      <th className="py-3">Org</th>
+                      <th className="py-3">Role</th>
+                      <th className="py-3">Assign to Org</th>
+                      <th className="py-3">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -634,14 +634,14 @@ export default function DashboardPage() {
 
                       return (
                         <tr key={`${u.userId}-${u.orgId}`} className="border-t border-slate-200">
-                          <td className="py-2">{u.name}</td>
-                          <td className="py-2">{u.email}</td>
-                          <td className="py-2">{u.orgName}</td>
-                          <td className="py-2">
+                          <td className="py-3">{u.name}</td>
+                          <td className="py-3">{u.email}</td>
+                          <td className="py-3">{u.orgName}</td>
+                          <td className="py-3">
                             <select
                               value={u.customRoleId ? `custom:${u.customRoleId}` : u.role}
                               onChange={(e) => updateRole(u.userId, u.orgId, e.target.value)}
-                              className="border border-slate-300 rounded px-2 py-1 text-sm bg-white"
+                              className="border border-slate-300 rounded px-3 py-2 text-base bg-white"
                             >
                               {rowRoleOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value}>
@@ -650,7 +650,7 @@ export default function DashboardPage() {
                               ))}
                             </select>
                           </td>
-                          <td className="py-2">
+                          <td className="py-3">
                             <AssignControls
                               allOrgs={accessibleOrgs}
                               defaultOrgId={orgSelectId}
@@ -660,10 +660,10 @@ export default function DashboardPage() {
                               builtInRoles={BUILTIN_ROLES}
                             />
                           </td>
-                          <td className="py-2">
+                          <td className="py-3">
                             <button
                               onClick={() => deleteMembership(u.userId, u.orgId)}
-                              className="text-red-600 hover:underline text-sm"
+                              className="text-red-600 hover:underline text-base"
                             >
                               Remove
                             </button>
@@ -673,7 +673,7 @@ export default function DashboardPage() {
                     })}
                     {!users.length && (
                       <tr>
-                        <td colSpan={6} className="text-center text-slate-500 py-6">
+                        <td colSpan={6} className="text-center text-slate-500 py-6 text-base">
                           No users
                         </td>
                       </tr>
@@ -686,93 +686,98 @@ export default function DashboardPage() {
         )}
 
         {tab === "orgs" && canSeeOrgsTab && (
-          <section className="space-y-6">
+          <section className="space-y-8"> {/* Increased spacing */}
             <Card title="Create Sub-Organization">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"> {/* Increased gap */}
                 <input
-                  className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-slate-300 rounded-lg px-4 py-3 text-base" // Bigger input
                   placeholder="Name"
                   value={sForm.name}
                   onChange={(e) => setSForm((f) => ({ ...f, name: e.target.value }))}
                 />
                 <input
-                  className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-slate-300 rounded-lg px-4 py-3 text-base"
                   placeholder="Email (optional)"
                   value={sForm.email}
                   onChange={(e) => setSForm((f) => ({ ...f, email: e.target.value }))}
                 />
                 <select
-                  className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-slate-300 rounded-lg px-4 py-3 text-base"
                   value={sForm.org_type}
-                  onChange={(e) => setSForm(f => ({ ...f, org_type: e.target.value }))}
+                  onChange={(e) =>
+                    setSForm((f) => ({ ...f, org_type: e.target.value }))
+                  }
                 >
                   <option value="NORMAL">Normal</option>
                   <option value="CLIENT">Client</option>
                 </select>
-
               </div>
-              {sMsg && <p className="text-sm pt-2">{sMsg}</p>}
-              <div className="pt-2">
-                <button
-                  onClick={async () => {
-                    setSMsg("");
-                    if (!sForm.name.trim()) {
-                      setSMsg("Name required");
-                      return;
-                    }
-                    const res = await fetch("/api/organizations/create-sub", {
-                      method: "POST",
-                      headers: authHeaders({ "Content-Type": "application/json" }),
-                      body: JSON.stringify({
-                        parent_id: Number(session.orgId),
-                        name: sForm.name.trim(),
-                        email: sForm.email || null,
-                        org_type: sForm.org_type,
-                      }),
-                    });
-                    const data = await res.json();
-                    if (!res.ok) {
-                      setSMsg(data?.error || "Failed");
-                      return;
-                    }
-                    setSMsg("✅ Sub-organization created");
-                    setSForm({ name: "", email: "" });
-                    await loadOrgs(session.orgId);
-                  }}
-                  className="btn-primary"
-                >
+
+              {sMsg && <p className="text-base pt-3">{sMsg}</p>} {/* Larger text */}
+
+              <div className="pt-4">
+                <button onClick={async () => {
+                  setSMsg("");
+                  if (!sForm.name.trim()) {
+                    setSMsg("Name required");
+                    return;
+                  }
+                  const res = await fetch("/api/organizations/create-sub", {
+                    method: "POST",
+                    headers: authHeaders({ "Content-Type": "application/json" }),
+                    body: JSON.stringify({
+                      parent_id: Number(session.orgId),
+                      name: sForm.name.trim(),
+                      email: sForm.email || null,
+                      org_type: sForm.org_type,
+                    }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) {
+                    setSMsg(data?.error || "Failed");
+                    return;
+                  }
+                  setSMsg("✅ Sub-organization created");
+                  setSForm({ name: "", email: "" });
+                  await loadOrgs(session.orgId);
+                }}
+                  className="btn-primary text-base px-5 py-2.5"> {/* Larger button */}
                   Create Sub-Org
                 </button>
               </div>
             </Card>
 
             <Card title={`Children of ${orgParent?.name || ""}`}>
-              <ul className="space-y-2">
+              <ul className="space-y-3"> {/* Increased spacing */}
                 {orgChildren.map((c) => (
                   <li
                     key={c.id}
-                    className="border border-slate-200 rounded-lg px-3 py-2 flex items-center justify-between bg-white"
+                    className="border border-slate-200 rounded-lg px-4 py-3 flex items-center justify-between bg-white"
                   >
                     <div>
-                      <div className="text-sm font-medium">{c.name}</div>
-                      <div className="text-[11px] text-slate-500">ID: {c.id}</div>
+                      <div className="text-base font-medium">{c.name}</div> {/* Larger name */}
+                      <div className="text-sm text-slate-500">ID: {c.id}</div> {/* Larger ID */}
                     </div>
                   </li>
                 ))}
-                {!orgChildren.length && <li className="text-sm text-slate-500">No sub-organizations yet.</li>}
+                {!orgChildren.length && (
+                  <li className="text-base text-slate-500">
+                    No sub-organizations yet.
+                  </li>
+                )}
               </ul>
             </Card>
           </section>
         )}
 
         {tab === "roles" && canSeeRolesTab && (
-          <section className="space-y-6">
+          <section className="space-y-8"> {/* Increased spacing */}
             <Card
               title="Roles"
               action={
                 <button
                   onClick={openNewRole}
-                  className="btn-primary"
+                  className="btn-primary text-base px-4 py-2 cursor-pointer" // Increased font and padding
                   disabled={!orgSelectId}
                   title={!orgSelectId ? "Pick an org first" : ""}
                 >
@@ -780,25 +785,29 @@ export default function DashboardPage() {
                 </button>
               }
             >
-              <div className="text-sm text-slate-600 mb-2">Built-in: {BUILTIN_ROLES.join(", ")}</div>
+              <div className="text-base text-slate-600 mb-3"> {/* Increased font size */}
+                Built-in: {BUILTIN_ROLES.join(", ")}
+              </div>
               <div>
-                <div className="text-xs text-slate-500 mb-1">Custom roles in this org</div>
-                <ul className="space-y-1">
+                <div className="text-sm text-slate-500 mb-2"> {/* Increased font size */}
+                  Custom roles in this org
+                </div>
+                <ul className="space-y-2"> {/* Increased vertical spacing */}
                   {customRoles.map((cr) => (
                     <li
                       key={cr.id}
-                      className="flex items-center justify-between border border-slate-200 rounded px-3 py-2 bg-white"
+                      className="flex items-center justify-between border border-slate-200 rounded px-4 py-3 bg-white" // Increased padding
                     >
-                      <span className="text-sm">
+                      <span className="text-base"> {/* Increased font size */}
                         {cr.name}
-                        <span className="ml-2 text-[11px] text-slate-500">
+                        <span className="ml-3 text-sm text-slate-500"> {/* Increased font size */}
                           [
                           {[
                             cr.can_view_tickets && "view",
                             cr.can_send_tickets && "create tickets",
                             cr.can_create_users && "create users",
                             cr.can_create_orgs && "create orgs",
-                            cr.can_create_roles && "create roles", // ✅ NEW
+                            cr.can_create_roles && "create roles",
                           ]
                             .filter(Boolean)
                             .join(", ") || "no permissions"}
@@ -806,7 +815,7 @@ export default function DashboardPage() {
                         </span>
                       </span>
                       <button
-                        className="text-xs underline"
+                        className="text-sm underline" // Increased font size
                         onClick={() => {
                           setRoleForm({
                             id: cr.id,
@@ -815,7 +824,7 @@ export default function DashboardPage() {
                             can_send_tickets: !!cr.can_send_tickets,
                             can_create_users: !!cr.can_create_users,
                             can_create_orgs: !!cr.can_create_orgs,
-                            can_create_roles: !!cr.can_create_roles, // ✅ NEW
+                            can_create_roles: !!cr.can_create_roles,
                           });
                           setRoleModalOpen(true);
                         }}
@@ -824,7 +833,11 @@ export default function DashboardPage() {
                       </button>
                     </li>
                   ))}
-                  {!customRoles.length && <li className="text-sm text-slate-500">No custom roles yet.</li>}
+                  {!customRoles.length && (
+                    <li className="text-base text-slate-500"> {/* Increased font size */}
+                      No custom roles yet.
+                    </li>
+                  )}
                 </ul>
               </div>
             </Card>
@@ -834,36 +847,43 @@ export default function DashboardPage() {
         {tab === "tickets" && canSeeTicketsTab && (
           <section className="space-y-6">
             <Card title="Create Ticket">
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 gap-4"> {/* Increased gap */}
                 <input
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-slate-300 rounded-lg px-4 py-3 text-base" // Increased padding & font size
                   placeholder="Client name"
                   value={tForm.client_name}
-                  onChange={(e) => setTForm((f) => ({ ...f, client_name: e.target.value }))}
+                  onChange={(e) =>
+                    setTForm((f) => ({ ...f, client_name: e.target.value }))
+                  }
                 />
                 <textarea
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm min-h-[120px]"
+                  className="w-full border border-slate-300 rounded-lg px-4 py-3 text-base min-h-[160px]" // Increased min height & font size
                   placeholder="Describe the issue"
                   value={tForm.description}
-                  onChange={(e) => setTForm((f) => ({ ...f, description: e.target.value }))}
+                  onChange={(e) =>
+                    setTForm((f) => ({ ...f, description: e.target.value }))
+                  }
                 />
               </div>
+
               {tMsg && (
-                <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+                <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-base text-green-800">
                   <span className="truncate">{tMsg}</span>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-3 shrink-0">
                     {lastCreatedTicketId && (
                       <button
                         onClick={async () => {
                           try {
-                            await navigator.clipboard.writeText(String(lastCreatedTicketId));
+                            await navigator.clipboard.writeText(
+                              String(lastCreatedTicketId)
+                            );
                             setCopied(true);
                             setTimeout(() => setCopied(false), 1500);
                           } catch {
                             alert("Failed to copy");
                           }
                         }}
-                        className="border border-green-300 rounded px-2 py-1 text-xs hover:bg-green-100"
+                        className="border border-green-300 rounded px-3 py-1.5 text-sm hover:bg-green-100"
                         title="Copy Ticket ID"
                       >
                         {copied ? "Copied!" : "Copy ID"}
@@ -875,7 +895,7 @@ export default function DashboardPage() {
                         setLastCreatedTicketId(null);
                         setCopied(false);
                       }}
-                      className="text-xs text-green-700 hover:underline"
+                      className="text-sm text-green-700 hover:underline"
                       title="Dismiss"
                     >
                       Dismiss
@@ -884,8 +904,8 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              <div className="pt-2">
-                <button onClick={createTicket} className="btn-primary">
+              <div className="pt-4">
+                <button onClick={createTicket} className="bg-black text-white rounded text-base px-5 py-2">
                   Create
                 </button>
               </div>
