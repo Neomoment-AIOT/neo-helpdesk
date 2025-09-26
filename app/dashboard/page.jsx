@@ -491,7 +491,6 @@ export default function DashboardPage() {
       <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold">N</div>
             <div>
               <span className="text-sm !text-black font-semibold">{selectedOrgName}</span>
               <div className="text-base text-slate-500">
@@ -555,7 +554,7 @@ export default function DashboardPage() {
         {/* Top Nav */}
         <nav className="border-t border-slate-200">
           <div className="max-w-6xl mx-auto px-4 overflow-x-auto">
-            <div className="flex items-center gap-2 py-2">
+            <div className="flex items-center border border-gray-200 w-fit rounded-md px-0.25 my-2">
               {canSeeUsersTab && <TopTab id="users" cur={tab} setTab={setTab}>Users</TopTab>}
               {canSeeOrgsTab && <TopTab id="orgs" cur={tab} setTab={setTab}>Organizations</TopTab>}
               {canSeeRolesTab && <TopTab id="roles" cur={tab} setTab={setTab}>Roles</TopTab>}
@@ -936,29 +935,31 @@ export default function DashboardPage() {
       {/* Ticket Detail Modal (uses <Meta/>) */}
       {ticketDetail && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-6"
           onClick={() => setTicketDetail(null)}
           aria-modal="true"
           role="dialog"
         >
           <div
-            className="bg-white w-full max-w-2xl rounded-xl shadow-xl border border-slate-200"
+            className="bg-white w-full max-w-4xl rounded-xl shadow-xl border border-slate-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-4 py-3 border-b border-slate-200 flex items-start justify-between">
-              <div>
-                <div className="text-sm text-slate-500">Ticket</div>
-                <div className="text-lg font-semibold">
-                  #{ticketDetail.ticket_id} — {ticketDetail.client_name || "Untitled ticket"}
+            <div className="px-6 py-5 border-b border-slate-200 flex items-start justify-between">
+              <div className="w-full">
+                <div className="text-base text-slate-500">Ticket</div>
+                <div className="text-2xl font-semibold flex justify-between">
+                  <span>#{ticketDetail.ticket_id}</span>
+                  <span>{ticketDetail.client_name || "Untitled ticket"}</span>
                 </div>
+
                 {ticketDetail.status && (
-                  <span className="inline-block mt-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600">
+                  <span className="inline-block mt-1 text-sm px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-600">
                     {ticketDetail.status}
                   </span>
                 )}
               </div>
               <button
-                className="text-slate-500 hover:text-slate-700 text-xl leading-none px-2"
+                className="text-slate-500 hover:text-slate-700 text-2xl leading-none px-3"
                 onClick={() => setTicketDetail(null)}
                 aria-label="Close"
                 title="Close"
@@ -967,14 +968,13 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            <div className="px-4 py-3 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div className="px-6 py-5 space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-base">
                 <Meta label="Organization" value={ticketDetail.orgName || ticketDetail.organization_id} />
                 <Meta
                   label="Created At"
                   value={ticketDetail.created_at ? new Date(ticketDetail.created_at).toLocaleString() : "-"}
                 />
-                <Meta label="Internal ID" value={ticketDetail.id} />
                 {ticketDetail.updated_at && (
                   <Meta label="Updated At" value={new Date(ticketDetail.updated_at).toLocaleString()} />
                 )}
@@ -982,25 +982,18 @@ export default function DashboardPage() {
 
               {ticketDetail.description && (
                 <div>
-                  <div className="text-xs text-slate-500 mb-1">Description</div>
-                  <div className="whitespace-pre-wrap text-sm border border-slate-200 rounded-lg p-3 bg-slate-50">
+                  <div className="text-sm text-slate-500 mb-2">Description</div>
+                  <div className="whitespace-pre-wrap text-base border border-slate-200 rounded-lg p-4 bg-slate-50">
                     {ticketDetail.description}
                   </div>
                 </div>
               )}
-
-              <details className="text-xs text-slate-500">
-                <summary className="cursor-pointer select-none">More details (raw)</summary>
-                <pre className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-lg overflow-auto text-[11px] leading-relaxed">
-                  {JSON.stringify(ticketDetail, null, 2)}
-                </pre>
-              </details>
             </div>
 
-            <div className="px-4 py-3 border-t border-slate-200 flex justify-end">
+            <div className="px-6 py-4 border-t border-slate-200 flex justify-end">
               <button
                 onClick={() => setTicketDetail(null)}
-                className="border border-slate-300 rounded px-3 py-1.5 text-sm hover:bg-slate-50"
+                className="border text-white bg-black rounded px-4 py-2 text-base hover:bg-gray-800"
               >
                 Close
               </button>
